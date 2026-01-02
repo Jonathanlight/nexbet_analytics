@@ -1,23 +1,74 @@
-# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
-
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-# See also https://symfony.com/doc/current/service_container/import.html
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
+    env(THE_ODDS_API_KEY): ''
+    env(FOOTBALL_DATA_API_KEY): ''
+    env(API_FOOTBALL_KEY): ''
+    env(OPENWEATHER_API_KEY): ''
 
 services:
-    # default configuration for services in *this* file
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
     App\:
         resource: '../src/'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Cache Service
+    App\Service\Data\Interface\CacheInterface:
+        class: App\Service\Data\Cache\FileCacheService
+
+    # Rate Limiter Service
+    App\Service\Data\Interface\RateLimiterInterface:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+
+    # The Odds API Adapter (500 req/mois)
+    App\Service\Data\Adapter\TheOddsApiAdapter:
+        arguments:
+            $apiKey: '%env(THE_ODDS_API_KEY)%'
+
+    # Football-Data.org API Adapter (10 req/min)
+    App\Service\Data\Adapter\FootballDataApiAdapter:
+        arguments:
+            $apiKey: '%env(FOOTBALL_DATA_API_KEY)%'
+
+    # API-Football Adapter (100 req/jour)
+    App\Service\Data\Adapter\ApiFootballAdapter:
+        arguments:
+            $apiKey: '%env(API_FOOTBALL_KEY)%'
+
+    # OpenWeatherMap API Adapter (1000 req/jour)
+    App\Service\Data\Adapter\OpenWeatherApiAdapter:
+        arguments:
+            $apiKey: '%env(OPENWEATHER_API_KEY)%'
+
+    # Rate Limiters avec configurations spécifiques
+    App\Service\Data\RateLimiter\SimpleRateLimiter:
+        shared: false
+
+    # Rate Limiter pour The Odds API (500/mois = ~16/jour)
+    the_odds_api.rate_limiter:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+        arguments:
+            $maxRequests: 16
+            $windowSeconds: 86400  # 1 jour
+
+    # Rate Limiter pour Football-Data (10/min)
+    football_data_api.rate_limiter:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+        arguments:
+            $maxRequests: 10
+            $windowSeconds: 60
+
+    # Rate Limiter pour API-Football (100/jour)
+    api_football.rate_limiter:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+        arguments:
+            $maxRequests: 100
+            $windowSeconds: 86400  # 1 jour
+
+    # Rate Limiter pour OpenWeather (1000/jour)
+    openweather_api.rate_limiter:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+        arguments:
+            $maxRequests: 1000
+            $windowSeconds: 86400  # 1 jour
+

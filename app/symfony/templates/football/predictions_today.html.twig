@@ -1,0 +1,74 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Prédictions Football Aujourd'hui - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">⚽ Prédictions Football du Jour</h1>
+        <p class="text-muted">Matchs de football avec analyses et prédictions IA</p>
+    </div>
+</div>
+
+{% if predictions is empty %}
+<div class="alert alert-info">
+    <h4 class="alert-heading">Aucun match aujourd'hui</h4>
+    <p class="mb-0">Il n'y a pas de matchs de football programmés pour aujourd'hui. Revenez plus tard !</p>
+</div>
+{% else %}
+<div class="row">
+    {% for prediction in predictions %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <strong>{{ prediction.match.league }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h5 class="mb-2">{{ prediction.match.homeTeam.name }}</h5>
+                    <span class="badge bg-secondary">VS</span>
+                    <h5 class="mt-2">{{ prediction.match.awayTeam.name }}</h5>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">📅 {{ prediction.match.matchDate|date('d/m/Y H:i') }}</small>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Domicile</span>
+                        <strong>{{ prediction.result.probabilities['1']|number_format(1) }}%</strong>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" style="width: {{ prediction.result.probabilities['1'] }}%"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Match nul</span>
+                        <strong>{{ prediction.result.probabilities['X']|number_format(1) }}%</strong>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-warning" style="width: {{ prediction.result.probabilities['X'] }}%"></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Extérieur</span>
+                        <strong>{{ prediction.result.probabilities['2']|number_format(1) }}%</strong>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: {{ prediction.result.probabilities['2'] }}%"></div>
+                    </div>
+                </div>
+
+                <div class="text-center">
+                    <a href="{{ path('app_football_match_analysis', {id: prediction.match.id}) }}" class="btn btn-primary btn-sm">
+                        Analyse complète
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Statistiques - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">📊 Statistiques Globales</h1>
+        <p class="text-muted">Aperçu des performances de l'application</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-value text-primary">0</div>
+            <div class="stat-label">Matchs Analysés</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-value text-success">0</div>
+            <div class="stat-label">Prédictions Correctes</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-value text-info">0%</div>
+            <div class="stat-label">Taux de Réussite</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-value text-warning">0</div>
+            <div class="stat-label">Paris Recommandés</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Statistiques Football</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Total matchs analysés</td>
+                            <td><strong>0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Paris sûrs détectés</td>
+                            <td><strong>0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Value bets détectés</td>
+                            <td><strong>0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Taux de réussite</td>
+                            <td><strong>N/A</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Statistiques Basketball</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <td>Total matchs analysés</td>
+                            <td><strong>0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Prédictions générées</td>
+                            <td><strong>0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Taux de réussite</td>
+                            <td><strong>N/A</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <h5 class="alert-heading">Statistiques en cours de développement</h5>
+    <p class="mb-0">Le système de suivi des statistiques sera activé lorsque des données réelles seront disponibles.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Matchs du Jour - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">📅 Tous les Matchs du Jour</h1>
+        <p class="text-muted">Vue d'ensemble de tous les matchs programmés aujourd'hui</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">⚽ Football</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>0 matchs</strong> programmés aujourd'hui</p>
+                <a href="{{ path('app_football_predictions_today') }}" class="btn btn-primary btn-sm">
+                    Voir les prédictions Football
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">🏀 Basketball</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>0 matchs</strong> programmés aujourd'hui</p>
+                <a href="{{ path('app_basketball_predictions_today') }}" class="btn btn-primary btn-sm">
+                    Voir les prédictions Basketball
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <h5 class="alert-heading">Aucune donnée disponible</h5>
+    <p class="mb-0">Il n'y a pas encore de matchs dans la base de données. Les données seront disponibles après l'importation des matchs.</p>
+</div>
+{% endblock %}

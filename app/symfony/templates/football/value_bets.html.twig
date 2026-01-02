@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Value Bets Football - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">💎 Value Bets Football</h1>
+        <p class="text-muted">Paris avec edge positif sur les bookmakers</p>
+    </div>
+</div>
+
+{% if value_bets is empty %}
+<div class="alert alert-info">
+    <h4 class="alert-heading">Aucun value bet détecté</h4>
+    <p class="mb-0">Aucun pari avec edge positif n'a été détecté pour le moment.</p>
+</div>
+{% else %}
+<div class="row">
+    {% for vb in value_bets %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning">
+                <strong>{{ vb.match.league }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h5>{{ vb.match.homeTeam.name }} vs {{ vb.match.awayTeam.name }}</h5>
+                    <small class="text-muted">{{ vb.match.matchDate|date('d/m/Y H:i') }}</small>
+                </div>
+
+                {% for bet in vb.value_bets %}
+                <div class="mb-3 p-2 bg-light rounded">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ bet.bet_type }}</strong>
+                        <span class="badge bg-success">Edge: +{{ bet.edge }}%</span>
+                    </div>
+                    <div class="small">
+                        Probabilité: {{ bet.probability|number_format(1) }}%<br>
+                        Expected Value: {{ bet.expected_value|number_format(2) }}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <a href="{{ path('app_football_match_analysis', {id: vb.match.id}) }}" class="btn btn-warning btn-sm w-100">
+                    Analyse détaillée
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

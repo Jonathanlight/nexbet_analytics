@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Gestion de Bankroll - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">💵 Gestion de Bankroll</h1>
+        <p class="text-muted">Suivez et gérez votre capital de paris</p>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <h5 class="alert-heading">Fonctionnalité en développement</h5>
+    <p class="mb-0">La gestion de bankroll sera disponible prochainement. Vous pourrez suivre vos mises, gains, pertes et l'évolution de votre capital.</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="stat-value text-primary">1000 €</div>
+            <div class="stat-label">Bankroll Initiale</div>
+        </div>
+    </div>
+    <div class="col-lg-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="stat-value text-success">1000 €</div>
+            <div class="stat-label">Bankroll Actuelle</div>
+        </div>
+    </div>
+    <div class="col-lg-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="stat-value text-info">0 €</div>
+            <div class="stat-label">Gains Totaux</div>
+        </div>
+    </div>
+    <div class="col-lg-3 mb-4">
+        <div class="stat-card text-center">
+            <div class="stat-value text-warning">0%</div>
+            <div class="stat-label">ROI</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

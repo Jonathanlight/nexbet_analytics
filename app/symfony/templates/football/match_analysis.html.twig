@@ -1,0 +1,136 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Analyse Match - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <a href="{{ path('app_football_predictions_today') }}" class="btn btn-outline-secondary btn-sm mb-3">← Retour</a>
+        <h1 class="h2">⚽ Analyse Complète du Match</h1>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ match.league }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center align-items-center">
+            <div class="col-4">
+                <h3>{{ match.homeTeam.name }}</h3>
+                <div class="text-muted small">ELO: {{ match.homeTeam.eloRating|number_format(0) }}</div>
+            </div>
+            <div class="col-4">
+                <div class="badge bg-secondary fs-6">VS</div>
+                <div class="text-muted small">{{ match.matchDate|date('d/m/Y H:i') }}</div>
+            </div>
+            <div class="col-4">
+                <h3>{{ match.awayTeam.name }}</h3>
+                <div class="text-muted small">ELO: {{ match.awayTeam.eloRating|number_format(0) }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">🎯 Résultat 1X2</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Victoire Domicile</span>
+                        <strong>{{ result_prediction.probabilities['1']|number_format(1) }}%</strong>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-success" style="width: {{ result_prediction.probabilities['1'] }}%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Match Nul</span>
+                        <strong>{{ result_prediction.probabilities['X']|number_format(1) }}%</strong>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-warning" style="width: {{ result_prediction.probabilities['X'] }}%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Victoire Extérieur</span>
+                        <strong>{{ result_prediction.probabilities['2']|number_format(1) }}%</strong>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" style="width: {{ result_prediction.probabilities['2'] }}%"></div>
+                    </div>
+                </div>
+
+                <div class="alert alert-primary mb-0">
+                    <strong>Prédiction:</strong> {{ result_prediction.most_likely }}
+                    <br>
+                    <strong>Confiance:</strong> {{ result_prediction.confidence|number_format(1) }}%
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">⚽ Buts (Over/Under)</div>
+            <div class="card-body">
+                {% for line, prediction in goals_prediction %}
+                <div class="mb-2">
+                    <strong>{{ line }}</strong>
+                    <div class="row">
+                        <div class="col">Over: {{ prediction.over|number_format(1) }}%</div>
+                        <div class="col">Under: {{ prediction.under|number_format(1) }}%</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">🎯 BTTS (Les deux équipes marquent)</div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="h2 text-success">{{ btts_prediction.yes|number_format(1) }}%</div>
+                        <div>OUI</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="h2 text-danger">{{ btts_prediction.no|number_format(1) }}%</div>
+                        <div>NON</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">📊 Score Exact</div>
+            <div class="card-body">
+                <div class="alert alert-info mb-2">
+                    <strong>Plus probable:</strong> {{ exact_score.most_likely }}
+                    ({{ exact_score.probability|number_format(1) }}%)
+                </div>
+                <div class="small">
+                    <strong>Autres scores probables:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% for score, prob in exact_score.top_scores|slice(1, 5) %}
+                        <li>{{ score }}: {{ prob|number_format(1) }}%</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

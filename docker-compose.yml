@@ -14,7 +14,7 @@ services:
       - '8000:80'
       - '8443:443'
     depends_on:
-      - mysql
+      - postgres
       - mailpit
     volumes:
       - './docker/etc/apache/virtualhost.conf:/etc/apache2/sites-enabled/000-default.conf:ro'
@@ -24,29 +24,39 @@ services:
       - './app/symfony:/var/www/symfony'
     networks:
       - symfony
-  mysql:
-    container_name: nexbet_analytics_mysql
-    image: mysql:8.0
+
+  postgres:
+    container_name: nexbet_analytics_postgres
+    image: postgres:16-alpine
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - './docker/etc/mysql/my.cnf:/etc/mysql/conf.d/my.cnf'
-      - 'symfony_db:/var/lib/mysql:cached'
+      - 'symfony_db:/var/lib/postgresql/data:cached'
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: nexbet_analytics
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 'root'
+      POSTGRES_DB: nexbet_analytics
     networks:
       - symfony
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d nexbet_analytics"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  phpmyadmin:
-    container_name: nexbet_analytics_phpmyadmin
+  pgadmin:
+    container_name: nexbet_analytics_pgadmin
+    image: dpage/pgadmin4:latest
     ports:
-      - '8001:80'
-    image: nazarpc/phpmyadmin
+      - '8002:80'
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@nexbet.com
+      PGADMIN_DEFAULT_PASSWORD: root
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
     networks:
       - symfony
     depends_on:
-      - mysql
+      - postgres
 
   mailpit:
     image: axllent/mailpit

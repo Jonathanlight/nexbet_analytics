@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Prédictions Basketball Aujourd'hui - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">🏀 Prédictions Basketball du Jour</h1>
+        <p class="text-muted">Matchs de basketball avec analyses et prédictions IA</p>
+    </div>
+</div>
+
+{% if matches is empty %}
+<div class="alert alert-info">
+    <h4 class="alert-heading">Aucun match aujourd'hui</h4>
+    <p class="mb-0">Il n'y a pas de matchs de basketball programmés pour aujourd'hui. Revenez plus tard !</p>
+</div>
+{% else %}
+<div class="row">
+    {% for match in matches %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <strong>{{ match.league }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <h5 class="mb-2">{{ match.homeTeam.name }}</h5>
+                    <span class="badge bg-secondary">VS</span>
+                    <h5 class="mt-2">{{ match.awayTeam.name }}</h5>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">📅 {{ match.matchDate|date('d/m/Y H:i') }}</small>
+                </div>
+
+                <div class="text-center">
+                    <a href="{{ path('app_basketball_match_analysis', {id: match.id}) }}" class="btn btn-primary btn-sm">
+                        Voir l'analyse
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Stratégies de Paris - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">📊 Stratégies de Mise</h1>
+        <p class="text-muted">Stratégies adaptées à votre profil de risque</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Conservateur</h5>
+            </div>
+            <div class="card-body">
+                <h6>Critères Kelly: 25%</h6>
+                <p class="small">Mise recommandée: 1% de la bankroll</p>
+                <ul class="small">
+                    <li>Confidence minimum: 80%</li>
+                    <li>Expected value: &gt; 5%</li>
+                    <li>Focus sur les paris sûrs</li>
+                </ul>
+                <div class="alert alert-success small">
+                    Risque minimal, gains réguliers
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Équilibré</h5>
+            </div>
+            <div class="card-body">
+                <h6>Critères Kelly: 50%</h6>
+                <p class="small">Mise recommandée: 1-4% de la bankroll</p>
+                <ul class="small">
+                    <li>Confidence minimum: 65%</li>
+                    <li>Expected value: &gt; 3%</li>
+                    <li>Mix paris sûrs et value bets</li>
+                </ul>
+                <div class="alert alert-warning small">
+                    Risque modéré, croissance stable
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Agressif</h5>
+            </div>
+            <div class="card-body">
+                <h6>Critère Kelly: 75%</h6>
+                <p class="small">Mise recommandée: 2-7% de la bankroll</p>
+                <ul class="small">
+                    <li>Confidence minimum: 55%</li>
+                    <li>Expected value: &gt; 2%</li>
+                    <li>Tous types de value bets</li>
+                </ul>
+                <div class="alert alert-danger small">
+                    Risque élevé, gains potentiels importants
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Critère de Kelly</h5>
+    </div>
+    <div class="card-body">
+        <p>Le critère de Kelly est une formule mathématique qui détermine la taille optimale de mise pour maximiser la croissance à long terme de votre bankroll.</p>
+        <p class="mb-0"><strong>Formule:</strong> f* = (bp - q) / b</p>
+        <ul class="small">
+            <li>f* = fraction de la bankroll à miser</li>
+            <li>b = cote décimale - 1</li>
+            <li>p = probabilité de gain</li>
+            <li>q = probabilité de perte (1 - p)</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

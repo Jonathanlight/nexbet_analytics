@@ -1,0 +1,182 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4 animate-fade-in">
+    <div class="col">
+        <h1 class="h2 mb-3">🎯 Tableau de Bord</h1>
+        <p class="text-muted">Vue d'ensemble de vos analyses de paris sportifs</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center hover-lift">
+            <div class="stat-value text-primary">24</div>
+            <div class="stat-label">Matchs Aujourd'hui</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center hover-lift">
+            <div class="stat-value text-success">8</div>
+            <div class="stat-label">Paris Sûrs</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center hover-lift">
+            <div class="stat-value text-warning">12</div>
+            <div class="stat-label">Value Bets</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center hover-lift">
+            <div class="stat-value text-info">5</div>
+            <div class="stat-label">Combinaisons</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container card-shimmer">
+            <h5 class="mb-4">📊 Statistiques des Prédictions</h5>
+            <canvas id="predictionStatsChart" height="250"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="chart-container card-shimmer">
+            <h5 class="mb-4">📈 Évolution du ROI</h5>
+            <canvas id="roiChart" height="250"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-8 mb-4">
+        <div class="chart-container card-shimmer">
+            <h5 class="mb-4">🏆 Performance par Sport</h5>
+            <canvas id="sportPerformanceChart" height="200"></canvas>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="chart-container card-shimmer">
+            <h5 class="mb-4">💰 Répartition des Paris</h5>
+            <canvas id="betDistributionChart" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">⚽ Football</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Analyses et prédictions pour les matchs de football</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ path('app_football_predictions_today') }}" class="btn btn-primary">
+                        Voir les prédictions du jour
+                    </a>
+                    <a href="{{ path('app_football_safe_bets') }}" class="btn btn-success">
+                        Paris sûrs
+                    </a>
+                    <a href="{{ path('app_football_value_bets') }}" class="btn btn-warning">
+                        Value bets
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">🏀 Basketball</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Analyses et prédictions pour les matchs de basketball</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ path('app_basketball_predictions_today') }}" class="btn btn-primary">
+                        Voir les prédictions du jour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">💰 Stratégies de Mise</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6>Combinaisons</h6>
+                        <p class="small text-muted">Générez des combinaisons optimales de paris</p>
+                        <a href="{{ path('app_betting_combinations') }}" class="btn btn-sm btn-outline-primary">
+                            Créer une combinaison
+                        </a>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h6>Stratégies</h6>
+                        <p class="small text-muted">Stratégies adaptées à votre profil de risque</p>
+                        <a href="{{ path('app_betting_strategies') }}" class="btn btn-sm btn-outline-primary">
+                            Voir les stratégies
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script type="module">
+        import {
+            createPredictionStatsChart,
+            createROIChart,
+            createSportPerformanceChart,
+            createBetDistributionChart
+        } from '/assets/scripts/charts.js';
+
+        // Données exemple pour les statistiques de prédictions
+        const predictionData = {
+            success: 65,
+            failed: 25,
+            pending: 10
+        };
+
+        // Données exemple pour l'évolution du ROI
+        const roiData = {
+            dates: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil'],
+            roi: [5.2, 8.5, 12.3, 15.8, 18.2, 22.5, 25.8]
+        };
+
+        // Données exemple pour la performance par sport
+        const sportData = {
+            sports: ['Football', 'Basketball', 'Tennis', 'Hockey'],
+            successRates: [68, 72, 61, 55]
+        };
+
+        // Données exemple pour la répartition des paris
+        const betDistData = {
+            betTypes: ['1X2', 'Over/Under', 'BTTS', 'Handicap', 'Exactscore'],
+            amounts: [35, 25, 20, 12, 8]
+        };
+
+        // Initialiser les charts quand le DOM est prêt
+        document.addEventListener('DOMContentLoaded', () => {
+            createPredictionStatsChart('predictionStatsChart', predictionData);
+            createROIChart('roiChart', roiData);
+            createSportPerformanceChart('sportPerformanceChart', sportData);
+            createBetDistributionChart('betDistributionChart', betDistData);
+        });
+    </script>
+{% endblock %}

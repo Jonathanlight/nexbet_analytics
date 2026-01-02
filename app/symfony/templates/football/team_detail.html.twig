@@ -1,0 +1,85 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ team.name }} - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">{{ team.name }}</h1>
+        <p class="text-muted">{{ team.league }} - {{ team.country }}</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-value">{{ team.eloRating|number_format(0) }}</div>
+            <div class="stat-label">Rating ELO</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-value">{{ team.wins }}</div>
+            <div class="stat-label">Victoires</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-value">{{ team.draws }}</div>
+            <div class="stat-label">Nuls</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card text-center">
+            <div class="stat-value">{{ team.losses }}</div>
+            <div class="stat-label">Défaites</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">Prochains Matchs</div>
+            <div class="card-body">
+                {% if upcoming_matches is empty %}
+                <p class="text-muted">Aucun match à venir</p>
+                {% else %}
+                <div class="list-group list-group-flush">
+                    {% for match in upcoming_matches %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>vs {{ match.homeTeam.id == team.id ? match.awayTeam.name : match.homeTeam.name }}</span>
+                            <small class="text-muted">{{ match.matchDate|date('d/m H:i') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card mb-4">
+            <div class="card-header">Matchs Récents</div>
+            <div class="card-body">
+                {% if recent_matches is empty %}
+                <p class="text-muted">Aucun match récent</p>
+                {% else %}
+                <div class="list-group list-group-flush">
+                    {% for match in recent_matches %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>vs {{ match.homeTeam.id == team.id ? match.awayTeam.name : match.homeTeam.name }}</span>
+                            <span class="badge bg-secondary">{{ match.homeScore }}-{{ match.awayScore }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

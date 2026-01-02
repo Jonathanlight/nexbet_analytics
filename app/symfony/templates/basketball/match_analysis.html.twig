@@ -1,0 +1,100 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Analyse Match Basketball - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <a href="{{ path('app_basketball_predictions_today') }}" class="btn btn-outline-secondary btn-sm mb-3">← Retour</a>
+        <h1 class="h2">🏀 Analyse du Match</h1>
+    </div>
+</div>
+
+{% if match is defined %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">{{ match.league }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-5">
+                <h3>{{ match.homeTeam.name }}</h3>
+            </div>
+            <div class="col-2">
+                <span class="badge bg-secondary fs-6">VS</span>
+            </div>
+            <div class="col-5">
+                <h3>{{ match.awayTeam.name }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Résultat du Match</div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <td>Victoire Domicile</td>
+                        <td><strong>{{ result_prediction.home_win|number_format(1) }}%</strong></td>
+                    </tr>
+                    <tr>
+                        <td>Victoire Extérieur</td>
+                        <td><strong>{{ result_prediction.away_win|number_format(1) }}%</strong></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Total de Points</div>
+            <div class="card-body">
+                {% for line, data in total_points %}
+                <div class="mb-3">
+                    <strong>{{ line }}</strong>
+                    <div class="row">
+                        <div class="col">Over: {{ data.over|number_format(1) }}%</div>
+                        <div class="col">Under: {{ data.under|number_format(1) }}%</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Handicaps</div>
+            <div class="card-body">
+                {% for handicap, data in handicap_prediction %}
+                <div class="mb-2">
+                    <strong>{{ handicap }}</strong>: {{ data.probability|number_format(1) }}%
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">Prédictions par Quart-Temps</div>
+            <div class="card-body">
+                {% for quarter, data in quarters %}
+                <div class="mb-3">
+                    <strong>{{ quarter }}</strong>
+                    <div>Domicile: {{ data.home_points|number_format(1) }} pts</div>
+                    <div>Extérieur: {{ data.away_points|number_format(1) }} pts</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
