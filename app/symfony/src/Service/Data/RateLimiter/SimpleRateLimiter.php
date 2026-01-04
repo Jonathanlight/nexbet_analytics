@@ -11,15 +11,18 @@ use App\Service\Data\Interface\RateLimiterInterface;
  */
 final class SimpleRateLimiter implements RateLimiterInterface
 {
-    private const STORAGE_DIR = '/var/cache/nexbet/ratelimit';
+    private readonly string $storageDir;
 
     public function __construct(
         private readonly int $maxRequests = 100,
         private readonly int $windowSeconds = 60,
-        private readonly string $storageDir = self::STORAGE_DIR,
+        ?string $storageDir = null,
     ) {
+        // Utiliser le répertoire système temp si aucun n'est spécifié
+        $this->storageDir = $storageDir ?? sys_get_temp_dir().'/nexbet_ratelimit';
+
         if (!is_dir($this->storageDir)) {
-            mkdir($this->storageDir, 0755, true);
+            @mkdir($this->storageDir, 0755, true);
         }
     }
 

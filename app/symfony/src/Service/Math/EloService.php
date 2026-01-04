@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Service\Math;
 
 use App\Entity\Team;
+use App\Service\Math\Interface\EloServiceInterface;
 
 /**
  * Service de calcul du rating Elo pour évaluer la force des équipes.
  * Le système Elo est adapté du système d'échecs pour le football.
  */
-class EloService
+class EloService implements EloServiceInterface
 {
     private const DEFAULT_RATING = 1500;
     private const K_FACTOR = 40; // Facteur K - détermine la vitesse de changement

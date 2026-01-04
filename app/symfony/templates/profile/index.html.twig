@@ -1,0 +1,142 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ 'profile.title'|trans }} - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h2 mb-3">👤 {{ 'profile.title'|trans }}</h1>
+        <p class="text-muted">{{ 'profile.edit'|trans }}</p>
+    </div>
+</div>
+
+{% for message in app.flashes('success') %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+{% endfor %}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ 'profile.edit'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ path('app_profile_update') }}" id="profileForm">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="name" class="form-label">{{ 'profile.name'|trans }}</label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">{{ 'auth.email'|trans }}</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="betting_profile" class="form-label">{{ 'profile.betting_profile'|trans }}</label>
+                            <select class="form-select" id="betting_profile" name="betting_profile">
+                                <option value="conservative" {% if user.bettingProfile == 'conservative' %}selected{% endif %}>
+                                    {{ 'profile.conservative'|trans }}
+                                </option>
+                                <option value="balanced" {% if user.bettingProfile == 'balanced' %}selected{% endif %}>
+                                    {{ 'profile.balanced'|trans }}
+                                </option>
+                                <option value="aggressive" {% if user.bettingProfile == 'aggressive' %}selected{% endif %}>
+                                    {{ 'profile.aggressive'|trans }}
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="max_stake_percentage" class="form-label">{{ 'profile.max_stake_percentage'|trans }} (%)</label>
+                            <input type="number" class="form-control" id="max_stake_percentage" name="max_stake_percentage"
+                                   value="{{ user.maxStakePercentage }}" min="1" max="100" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="bankroll" class="form-label">{{ 'profile.current_bankroll'|trans }} (€)</label>
+                            <input type="number" class="form-control" id="bankroll" name="bankroll"
+                                   value="{{ user.bankroll }}" min="0" step="0.01">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ 'profile.initial_bankroll'|trans }}</label>
+                            <input type="text" class="form-control" value="{{ user.initialBankroll }} €" disabled>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="new_password" class="form-label">{{ 'auth.password'|trans }} ({{ 'message.optional'|trans|default('Optionnel') }})</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password"
+                                   placeholder="Laisser vide pour ne pas changer">
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            💾 {{ 'profile.save'|trans }}
+                        </button>
+                        <a href="{{ path('app_dashboard_authenticated') }}" class="btn btn-secondary">
+                            {{ 'profile.cancel'|trans }}
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">📊 {{ 'stats.global_stats'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>{{ 'betting.bankroll'|trans }}:</strong><br>
+                    <span class="h4">{{ user.bankroll|number_format(2) }} €</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Croissance:</strong><br>
+                    <span class="h4 {% if user.bankrollGrowth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        {{ user.bankrollGrowth|number_format(2) }}%
+                    </span>
+                </div>
+                <div class="mb-3">
+                    <strong>Mise max par pari:</strong><br>
+                    <span class="h5">{{ user.maxStakeAmount|number_format(2) }} €</span>
+                </div>
+                <div>
+                    <strong>{{ 'profile.betting_profile'|trans }}:</strong><br>
+                    <span class="badge bg-primary">{{ ('profile.' ~ user.bettingProfile)|trans }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">ℹ️ {{ 'message.info'|trans }}</h5>
+            </div>
+            <div class="card-body">
+                <p class="small mb-2">
+                    <strong>{{ 'profile.conservative'|trans }}:</strong>
+                    Mise 1-3% par pari
+                </p>
+                <p class="small mb-2">
+                    <strong>{{ 'profile.balanced'|trans }}:</strong>
+                    Mise 3-5% par pari
+                </p>
+                <p class="small mb-0">
+                    <strong>{{ 'profile.aggressive'|trans }}:</strong>
+                    Mise 5-10% par pari
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

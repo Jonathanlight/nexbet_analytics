@@ -38,8 +38,26 @@ class ResultPredictionService
         $homeStats = $this->matchRepository->getTeamAverageStats($homeTeam, 10);
         $awayStats = $this->matchRepository->getTeamAverageStats($awayTeam, 10);
 
+        // Utiliser les cotes du bookmaker si disponibles pour ajuster les expected goals
+        $oddsPrediction = $this->calculateProbabilitiesFromOdds($match);
+        $hasOdds = null !== $oddsPrediction;
+
+        // Ajuster les expected goals en fonction des cotes si disponibles
         $homeExpectedGoals = $homeStats['avg_goals_scored'];
         $awayExpectedGoals = $awayStats['avg_goals_scored'];
+
+        if ($hasOdds && !$homeStats['has_historical_data']) {
+            // Utiliser les cotes pour estimer les expected goals
+            $homeWinProb = $oddsPrediction['1'] / 100;
+            $awayWinProb = $oddsPrediction['2'] / 100;
+
+            // Estimation: une équipe favorite marque plus
+            $homeExpectedGoals = 1.0 + ($homeWinProb - $awayWinProb) * 1.5;
+            $awayExpectedGoals = 1.0 + ($awayWinProb - $homeWinProb) * 1.5;
+
+            $homeExpectedGoals = max(0.5, min(3.0, $homeExpectedGoals));
+            $awayExpectedGoals = max(0.5, min(3.0, $awayExpectedGoals));
+        }
 
         // 1. Prédiction Poisson
         $poissonPrediction = $this->poissonService->calculateResultProbabilities(
@@ -64,13 +82,21 @@ class ResultPredictionService
         );
         $monteCarloPrediction = $monteCarloResults['result'];
 
-        // Agréger les résultats
-        $aggregatedPrediction = $this->aggregatePredictions([
+        // Construire les prédictions à agréger
+        $predictionsToAggregate = [
             'poisson' => $poissonPrediction,
             'elo' => $eloPrediction,
             'xg' => $xgPrediction,
             'monte_carlo' => $monteCarloPrediction,
-        ]);
+        ];
+
+        // Ajouter les cotes du bookmaker avec un poids important si disponibles
+        if ($hasOdds) {
+            $predictionsToAggregate['bookmaker'] = $oddsPrediction;
+        }
+
+        // Agréger les résultats
+        $aggregatedPrediction = $this->aggregatePredictions($predictionsToAggregate);
 
         // Calculer la confiance
         $algorithmScores = [
@@ -79,6 +105,10 @@ class ResultPredictionService
             'xg' => max($xgPrediction['1'], $xgPrediction['X'], $xgPrediction['2']),
             'monte_carlo' => max($monteCarloPrediction['1'], $monteCarloPrediction['X'], $monteCarloPrediction['2']),
         ];
+
+        if ($hasOdds) {
+            $algorithmScores['bookmaker'] = max($oddsPrediction['1'], $oddsPrediction['X'], $oddsPrediction['2']);
+        }
 
         $confidence = $this->confidenceCalculator->calculateOverallConfidence($algorithmScores);
 
@@ -95,11 +125,61 @@ class ResultPredictionService
                 'elo' => $eloPrediction,
                 'xg' => $xgPrediction,
                 'monte_carlo' => $monteCarloPrediction,
+                'bookmaker' => $oddsPrediction,
             ],
             'expected_goals' => [
                 'home' => round($homeExpectedGoals, 2),
                 'away' => round($awayExpectedGoals, 2),
             ],
+            'has_historical_data' => $homeStats['has_historical_data'] && $awayStats['has_historical_data'],
+        ];
+    }
+
+    /**
+     * Calcule les probabilités à partir des cotes du bookmaker.
+     */
+    private function calculateProbabilitiesFromOdds(FootballMatch $match): ?array
+    {
+        $odds = $match->getOdds();
+
+        if ($odds->isEmpty()) {
+            return null;
+        }
+
+        $homeOdds = null;
+        $drawOdds = null;
+        $awayOdds = null;
+
+        foreach ($odds as $odd) {
+            if ('1X2' === $odd->getBetType() || 'ML' === $odd->getBetType()) {
+                $market = $odd->getMarket();
+                if ('home' === $market || '1' === $market) {
+                    $homeOdds = $odd->getOdds();
+                } elseif ('draw' === $market || 'X' === $market) {
+                    $drawOdds = $odd->getOdds();
+                } elseif ('away' === $market || '2' === $market) {
+                    $awayOdds = $odd->getOdds();
+                }
+            }
+        }
+
+        // Si on n'a pas toutes les cotes, retourner null
+        if (null === $homeOdds || null === $awayOdds) {
+            return null;
+        }
+
+        // Convertir les cotes en probabilités implicites
+        $homeProb = 1 / $homeOdds;
+        $drawProb = null !== $drawOdds ? (1 / $drawOdds) : 0.25; // 25% par défaut pour le nul
+        $awayProb = 1 / $awayOdds;
+
+        // Normaliser (enlever la marge du bookmaker)
+        $total = $homeProb + $drawProb + $awayProb;
+
+        return [
+            '1' => round(($homeProb / $total) * 100, 2),
+            'X' => round(($drawProb / $total) * 100, 2),
+            '2' => round(($awayProb / $total) * 100, 2),
         ];
     }
 
@@ -123,12 +203,25 @@ class ResultPredictionService
      */
     private function aggregatePredictions(array $predictions): array
     {
+        // Poids par défaut sans cotes bookmaker
         $weights = [
             'poisson' => 0.25,
             'elo' => 0.20,
             'xg' => 0.30,
             'monte_carlo' => 0.25,
         ];
+
+        // Si on a les cotes du bookmaker, les utiliser avec un poids important
+        // car elles représentent l'analyse du marché
+        if (isset($predictions['bookmaker'])) {
+            $weights = [
+                'poisson' => 0.15,
+                'elo' => 0.10,
+                'xg' => 0.15,
+                'monte_carlo' => 0.15,
+                'bookmaker' => 0.45, // Les cotes sont très fiables
+            ];
+        }
 
         $aggregated = [
             '1' => 0.0,
@@ -137,6 +230,10 @@ class ResultPredictionService
         ];
 
         foreach ($predictions as $algorithm => $prediction) {
+            if (null === $prediction) {
+                continue;
+            }
+
             $weight = $weights[$algorithm] ?? 0.0;
 
             $aggregated['1'] += $prediction['1'] * $weight;
@@ -146,6 +243,11 @@ class ResultPredictionService
 
         // Normaliser pour que la somme soit 100
         $total = $aggregated['1'] + $aggregated['X'] + $aggregated['2'];
+
+        if (0.0 === $total) {
+            // Fallback si aucune donnée
+            return ['1' => 33.33, 'X' => 33.34, '2' => 33.33];
+        }
 
         return [
             '1' => round(($aggregated['1'] / $total) * 100, 2),

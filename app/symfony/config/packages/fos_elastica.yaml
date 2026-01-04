@@ -1,0 +1,109 @@
+fos_elastica:
+    clients:
+        default:
+            host: '%env(ELASTICSEARCH_HOST)%'
+            port: '%env(int:ELASTICSEARCH_PORT)%'
+
+    indexes:
+        # Index pour les matchs de football
+        football_matches:
+            settings:
+                index:
+                    number_of_shards: 1
+                    number_of_replicas: 0
+                analysis:
+                    analyzer:
+                        team_analyzer:
+                            type: custom
+                            tokenizer: standard
+                            filter: [lowercase, asciifolding]
+            properties:
+                external_id: { type: keyword }
+                home_team: { type: text, analyzer: team_analyzer }
+                away_team: { type: text, analyzer: team_analyzer }
+                league: { type: keyword }
+                country: { type: keyword }
+                match_date: { type: date }
+                status: { type: keyword }
+                home_score: { type: integer }
+                away_score: { type: integer }
+                venue: { type: text }
+                created_at: { type: date }
+            persistence:
+                driver: orm
+                model: App\Entity\FootballMatch
+                provider: ~
+                finder: ~
+                listener:
+                    enabled: true
+                    insert: true
+                    update: true
+                    delete: true
+
+        # Index pour les matchs de basketball
+        basketball_matches:
+            settings:
+                index:
+                    number_of_shards: 1
+                    number_of_replicas: 0
+            properties:
+                external_id: { type: keyword }
+                home_team: { type: text }
+                away_team: { type: text }
+                league: { type: keyword }
+                country: { type: keyword }
+                match_date: { type: date }
+                status: { type: keyword }
+                home_score: { type: integer }
+                away_score: { type: integer }
+            persistence:
+                driver: orm
+                model: App\Entity\BasketballMatch
+                provider: ~
+                finder: ~
+                listener:
+                    enabled: true
+
+        # Index pour les matchs de hockey
+        hockey_matches:
+            settings:
+                index:
+                    number_of_shards: 1
+                    number_of_replicas: 0
+            properties:
+                external_id: { type: keyword }
+                home_team: { type: text }
+                away_team: { type: text }
+                league: { type: keyword }
+                country: { type: keyword }
+                match_date: { type: date }
+                status: { type: keyword }
+                home_score: { type: integer }
+                away_score: { type: integer }
+            persistence:
+                driver: orm
+                model: App\Entity\HockeyMatch
+                provider: ~
+                finder: ~
+                listener:
+                    enabled: true
+
+        # Index pour les prédictions (sans persistence - peuplé manuellement)
+        predictions:
+            settings:
+                index:
+                    number_of_shards: 1
+                    number_of_replicas: 0
+            properties:
+                match_id: { type: integer }
+                sport: { type: keyword }
+                home_team: { type: text }
+                away_team: { type: text }
+                home_win_prob: { type: float }
+                draw_prob: { type: float }
+                away_win_prob: { type: float }
+                confidence: { type: float }
+                created_at: { type: date }
+                validated: { type: boolean }
+                was_correct: { type: boolean }
+            # Pas de persistence car les prédictions sont indexées manuellement

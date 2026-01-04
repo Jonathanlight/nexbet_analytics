@@ -1,10 +1,11 @@
-
 networks:
   symfony:
     driver: bridge
 
 volumes:
   symfony_db:
+  elasticsearch_data:
+  redis_data:
 
 services:
   apache:
@@ -14,68 +15,129 @@ services:
       - '8000:80'
       - '8443:443'
     depends_on:
-      - postgres
-      - mailpit
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     volumes:
       - './docker/etc/apache/virtualhost.conf:/etc/apache2/sites-enabled/000-default.conf:ro'
       - './docker/etc/apache/default-ssl.conf:/etc/apache2/sites-enabled/default-ssl.conf'
       - './docker/etc/php/php.ini:/usr/local/etc/php/php.ini'
       - './docker/etc/apache/ssl/:/etc/apache2/conf/ssl'
       - './app/symfony:/var/www/symfony'
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
     networks:
       - symfony
 
-  postgres:
-    container_name: nexbet_analytics_postgres
-    image: postgres:16-alpine
+  mysql:
+    container_name: nexbet_analytics_mysql
+    image: mysql:8.0
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - 'symfony_db:/var/lib/postgresql/data:cached'
+      - 'symfony_db:/var/lib/mysql:cached'
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 'root'
-      POSTGRES_DB: nexbet_analytics
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_DATABASE: nexbet_analytics
     networks:
       - symfony
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d nexbet_analytics"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --default-authentication-plugin=mysql_native_password
+
+  redis:
+    container_name: nexbet_analytics_redis
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - 'redis_data:/data'
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - symfony
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  pgadmin:
-    container_name: nexbet_analytics_pgadmin
-    image: dpage/pgadmin4:latest
+  redis-commander:
+    container_name: nexbet_analytics_redis_commander
+    image: rediscommander/redis-commander:latest
     ports:
-      - '8002:80'
+      - "8002:8081"
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@nexbet.com
-      PGADMIN_DEFAULT_PASSWORD: root
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      REDIS_HOSTS: local:redis:6379
     networks:
       - symfony
     depends_on:
-      - postgres
+      - redis
 
-  mailpit:
-    image: axllent/mailpit
-    container_name: nexbet_analytics_mailpit
+  elasticsearch:
+    container_name: nexbet_analytics_elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     ports:
-      - "1025:1025"
-      - "8025:8025"
-    environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-    networks:
-      - symfony
-
-  node:
-    container_name: nexbet_analytics_node
-    image: node:20-alpine
-    working_dir: /var/www/symfony
+      - "9200:9200"
+      - "9300:9300"
     volumes:
-      - './app/symfony:/var/www/symfony'
+      - 'elasticsearch_data:/usr/share/elasticsearch/data'
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - cluster.name=nexbet-cluster
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - symfony
-    command: tail -f /dev/null
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"\\|\"status\":\"yellow\"'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  kibana:
+    container_name: nexbet_analytics_kibana
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - xpack.security.enabled=false
+    networks:
+      - symfony
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+
+  phpmyadmin:
+    container_name: nexbet_analytics_phpmyadmin
+    image: phpmyadmin:latest
+    ports:
+      - '8001:80'
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+      UPLOAD_LIMIT: 300M
+    networks:
+      - symfony
+    depends_on:
+      - mysql

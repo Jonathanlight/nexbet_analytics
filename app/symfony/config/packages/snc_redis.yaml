@@ -1,0 +1,31 @@
+snc_redis:
+    clients:
+        default:
+            type: phpredis
+            alias: default
+            dsn: '%env(REDIS_URL)%'
+            logging: false
+            options:
+                prefix: 'nexbet:'
+
+        cache:
+            type: phpredis
+            alias: cache
+            dsn: '%env(REDIS_URL)%'
+            logging: false
+            options:
+                prefix: 'nexbet:cache:'
+
+        session:
+            type: phpredis
+            alias: session
+            dsn: '%env(REDIS_URL)%'
+            logging: false
+            options:
+                prefix: 'nexbet:session:'
+
+    # Optionnel: utiliser Redis pour les sessions
+    # session:
+    #     client: session
+    #     prefix: 'session:'
+    #     ttl: 86400

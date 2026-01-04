@@ -1,0 +1,277 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ match.homeTeam.name }} vs {{ match.awayTeam.name }} - Analyse Hockey{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    {# Header #}
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ path('app_dashboard_authenticated') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ path('app_hockey_predictions_today') }}">Hockey</a></li>
+                    <li class="breadcrumb-item active">Analyse du match</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    {# Match Header #}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-info">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 text-center">
+                            <h3 class="mb-1 text-light">{{ match.homeTeam.name }}</h3>
+                            <span class="badge bg-primary">Domicile</span>
+                        </div>
+                        <div class="col-md-4 text-center py-3">
+                            <div class="display-6 text-info mb-2">VS</div>
+                            <div class="text-muted">
+                                <i class="far fa-calendar me-2"></i>{{ match.matchDate|date('d/m/Y') }}
+                                <i class="far fa-clock ms-3 me-2"></i>{{ match.matchDate|date('H:i') }}
+                            </div>
+                            <span class="badge bg-info mt-2">{{ match.league }}</span>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <h3 class="mb-1 text-light">{{ match.awayTeam.name }}</h3>
+                            <span class="badge bg-danger">Exterieur</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {# Prediction Resultat #}
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header bg-info bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-hockey-puck me-2"></i>Prediction du Resultat</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-4">
+                        <div class="col-4">
+                            <div class="p-3 rounded {% if result_prediction.prediction == '1' %}bg-primary{% else %}bg-secondary bg-opacity-25{% endif %}">
+                                <div class="h4 mb-1">{{ result_prediction.probabilities['1'] }}%</div>
+                                <small>Victoire Dom.</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 rounded {% if result_prediction.prediction == 'X' %}bg-warning text-dark{% else %}bg-secondary bg-opacity-25{% endif %}">
+                                <div class="h4 mb-1">{{ result_prediction.probabilities['X'] }}%</div>
+                                <small>Match Nul</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 rounded {% if result_prediction.prediction == '2' %}bg-danger{% else %}bg-secondary bg-opacity-25{% endif %}">
+                                <div class="h4 mb-1">{{ result_prediction.probabilities['2'] }}%</div>
+                                <small>Victoire Ext.</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong>Prediction:</strong>
+                        {% if result_prediction.prediction == '1' %}Victoire {{ match.homeTeam.name }}
+                        {% elseif result_prediction.prediction == 'X' %}Match nul (prolongation probable)
+                        {% else %}Victoire {{ match.awayTeam.name }}{% endif %}
+                        <span class="float-end">Confiance: {{ result_prediction.confidence }}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Total Buts #}
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header bg-success bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-bullseye me-2"></i>Total de Buts</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="display-4 text-success">{{ total_goals.expected_total }}</div>
+                        <small class="text-muted">Buts attendus</small>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span>Over 4.5</span>
+                                <strong class="text-success">{{ total_goals.predictions['over_4.5']|round(0) }}%</strong>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ total_goals.predictions['over_4.5'] }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span>Under 4.5</span>
+                                <strong class="text-danger">{{ total_goals.predictions['under_4.5']|round(0) }}%</strong>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-danger" style="width: {{ total_goals.predictions['under_4.5'] }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span>Over 5.5</span>
+                                <strong class="text-success">{{ total_goals.predictions['over_5.5']|round(0) }}%</strong>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ total_goals.predictions['over_5.5'] }}%"></div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-2 d-flex justify-content-between">
+                                <span>Under 5.5</span>
+                                <strong class="text-danger">{{ total_goals.predictions['under_5.5']|round(0) }}%</strong>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-danger" style="width: {{ total_goals.predictions['under_5.5'] }}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Periodes #}
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header bg-warning bg-opacity-25">
+                    <h5 class="mb-0 text-dark"><i class="fas fa-stopwatch me-2"></i>Analyse par Periode</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Periode</th>
+                                    <th class="text-center">{{ match.homeTeam.name|split(' ')|first }}</th>
+                                    <th class="text-center">{{ match.awayTeam.name|split(' ')|first }}</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">Over 1.5</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1ere Periode</td>
+                                    <td class="text-center">{{ periods.p1.home }}</td>
+                                    <td class="text-center">{{ periods.p1.away }}</td>
+                                    <td class="text-center text-info">{{ periods.p1.total }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if periods.p1['over_1_5'] > 50 %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ periods.p1['over_1_5']|round(0) }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2eme Periode</td>
+                                    <td class="text-center">{{ periods.p2.home }}</td>
+                                    <td class="text-center">{{ periods.p2.away }}</td>
+                                    <td class="text-center text-info">{{ periods.p2.total }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if periods.p2['over_1_5'] > 50 %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ periods.p2['over_1_5']|round(0) }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>3eme Periode</td>
+                                    <td class="text-center">{{ periods.p3.home }}</td>
+                                    <td class="text-center">{{ periods.p3.away }}</td>
+                                    <td class="text-center text-info">{{ periods.p3.total }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {% if periods.p3['over_1_5'] > 50 %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {{ periods.p3['over_1_5']|round(0) }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Periode la plus prolifique: <strong>{{ periods.highest_scoring_period }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Handicap #}
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark h-100">
+                <div class="card-header bg-purple bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>Handicap</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <span class="text-muted">Marge attendue:</span>
+                        <div class="display-6 {% if handicap_prediction.expected_margin > 0 %}text-primary{% else %}text-danger{% endif %}">
+                            {% if handicap_prediction.expected_margin > 0 %}+{% endif %}{{ handicap_prediction.expected_margin }} buts
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="text-center mb-3">{{ match.homeTeam.name|split(' ')|first }}</h6>
+                            {% for key, value in handicap_prediction.predictions %}
+                                {% if key starts with 'home_' %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>{{ key|replace({'home_': ''}) }}</span>
+                                    <span class="badge bg-secondary">{{ value }}%</span>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-center mb-3">{{ match.awayTeam.name|split(' ')|first }}</h6>
+                            {% for key, value in handicap_prediction.predictions %}
+                                {% if key starts with 'away_' %}
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>{{ key|replace({'away_': ''}) }}</span>
+                                    <span class="badge bg-secondary">{{ value }}%</span>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Prolongation #}
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark">
+                <div class="card-header bg-danger bg-opacity-25">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Prolongation</h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-4 mb-3 {% if overtime.probability > 15 %}text-warning{% else %}text-success{% endif %}">
+                        {{ overtime.probability }}%
+                    </div>
+                    <p class="text-muted mb-0">{{ overtime.description }}</p>
+                </div>
+            </div>
+        </div>
+
+        {# Actions #}
+        <div class="col-lg-6 mb-4">
+            <div class="card bg-dark">
+                <div class="card-body text-center">
+                    <h5 class="mb-3">Actions</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{{ path('app_hockey_predictions_today') }}" class="btn btn-outline-info">
+                            <i class="fas fa-arrow-left me-2"></i>Retour aux predictions
+                        </a>
+                        <button class="btn btn-info" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i>Imprimer l'analyse
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

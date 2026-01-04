@@ -16,6 +16,13 @@ return [
         'path' => './assets/app.js',
         'entrypoint' => true,
     ],
+    'dashboard-charts' => [
+        'path' => './assets/scripts/dashboard-charts.js',
+        'entrypoint' => true,
+    ],
+    'simple-charts' => [
+        'path' => './assets/scripts/simple-charts.js',
+    ],
     '@hotwired/stimulus' => [
         'version' => '3.2.2',
     ],
@@ -40,6 +47,9 @@ return [
     ],
     'chart.js/auto' => [
         'version' => '4.4.1',
+    ],
+    '@kurkle/color' => [
+        'version' => '0.3.2',
     ],
     'gulp' => [
         'version' => '3.8.7',

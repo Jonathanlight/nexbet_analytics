@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Service\Math;
 
+use App\Service\Math\Interface\PoissonServiceInterface;
+
 /**
  * Service de calcul de la distribution de Poisson pour prédire les scores.
  * Utilise la formule: P(X=k) = (λ^k * e^(-λ)) / k!
  */
-class PoissonService
+class PoissonService implements PoissonServiceInterface
 {
     /**
      * Calcule la probabilité qu'une équipe marque exactement k buts.

@@ -7,6 +7,7 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "ext-redis": "*",
         "doctrine/dbal": "^3",
         "doctrine/doctrine-bundle": "^2.18",
         "doctrine/doctrine-migrations-bundle": "^3.7",
@@ -42,6 +43,8 @@
         "symfony/validator": "7.4.*",
         "symfony/web-link": "7.4.*",
         "symfony/yaml": "7.4.*",
+        "friendsofsymfony/elastica-bundle": "^6.4",
+        "snc/redis-bundle": "^4.7",
         "twig/extra-bundle": "^2.12|^3.0",
         "twig/twig": "^2.12|^3.0"
     },
@@ -97,6 +100,7 @@
         }
     },
     "require-dev": {
+        "doctrine/doctrine-fixtures-bundle": "^3.6",
         "friendsofphp/php-cs-fixer": "*",
         "phpstan/phpstan": "*",
         "phpunit/phpunit": "*",
@@ -106,6 +110,7 @@
         "symfony/maker-bundle": "^1.0",
         "symfony/stopwatch": "7.4.*",
         "symfony/web-profiler-bundle": "7.4.*",
+        "vincentlanglet/twig-cs-fixer": "^3.0",
         "vimeo/psalm": "*"
     }
 }

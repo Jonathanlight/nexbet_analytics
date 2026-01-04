@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Enum\MatchStatus;
 use App\Repository\FootballMatchRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -35,8 +36,8 @@ class FootballMatch
     #[ORM\Column(type: 'datetime_immutable')]
     private \DateTimeImmutable $matchDate;
 
-    #[ORM\Column(length: 50)]
-    private string $status = 'scheduled'; // scheduled, live, finished, postponed, cancelled
+    #[ORM\Column(type: 'string', length: 50, enumType: MatchStatus::class)]
+    private MatchStatus $status;
 
     #[ORM\Column(nullable: true)]
     private ?int $homeScore = null;
@@ -117,6 +118,7 @@ class FootballMatch
     {
         $this->predictions = new ArrayCollection();
         $this->odds = new ArrayCollection();
+        $this->status = MatchStatus::SCHEDULED;
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -174,14 +176,14 @@ class FootballMatch
         return $this;
     }
 
-    public function getStatus(): string
+    public function getStatus(): MatchStatus
     {
         return $this->status;
     }
 
-    public function setStatus(string $status): self
+    public function setStatus(MatchStatus|string $status): self
     {
-        $this->status = $status;
+        $this->status = is_string($status) ? MatchStatus::from($status) : $status;
         $this->updatedAt = new \DateTimeImmutable();
 
         return $this;
@@ -441,14 +443,43 @@ class FootballMatch
         return $this->odds;
     }
 
+    /**
+     * Retourne les cotes sous forme de tableau structuré.
+     *
+     * @return array<string, array<string, float>>
+     */
+    public function getOddsArray(): array
+    {
+        $result = [];
+
+        foreach ($this->odds as $odd) {
+            $betType = $odd->getBetType();
+            $market = $odd->getMarket();
+            $value = $odd->getOdds();
+
+            if (!isset($result[$betType])) {
+                $result[$betType] = [];
+            }
+
+            $result[$betType][$market] = $value;
+        }
+
+        return $result;
+    }
+
     public function isFinished(): bool
     {
-        return 'finished' === $this->status;
+        return $this->status->isFinished();
     }
 
     public function isScheduled(): bool
     {
-        return 'scheduled' === $this->status;
+        return $this->status->isScheduled();
+    }
+
+    public function isLive(): bool
+    {
+        return $this->status->isLive();
     }
 
     public function getTotalGoals(): ?int

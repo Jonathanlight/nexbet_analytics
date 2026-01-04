@@ -82,8 +82,12 @@ class BasketballPredictionService
         float $awayAvgPoints,
         array $lines = [160.5, 170.5, 180.5, 190.5, 200.5, 210.5, 220.5],
     ): array {
-        $predictions = [];
         $expectedTotal = $homeAvgPoints + $awayAvgPoints;
+
+        $predictions = [
+            'expected_total' => round($expectedTotal, 1),
+            'over_under_line' => 210.5,
+        ];
 
         foreach ($lines as $line) {
             $overProb = $this->calculateOverProbability($expectedTotal, $line);

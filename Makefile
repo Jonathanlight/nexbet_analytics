@@ -103,7 +103,6 @@ phpunit: ## phpunit
 	-$(DOCKER_DEV) exec apache php bin/console doctrine:migrations:migrate --env=test --no-interaction || true
 	-$(DOCKER_DEV) exec apache php bin/console doctrine:fixtures:load --env=test --no-interaction || true
 	-$(DOCKER_DEV) exec apache vendor/bin/phpunit --colors=always
-	-$(DOCKER_DEV) exec apache vendor/bin/behat --format=pretty
 
 fixtures: ## load doctrine fixtures
 	$(DOCKER_DEV) exec apache bin/console doctrine:fixtures:load

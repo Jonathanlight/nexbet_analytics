@@ -1,89 +1,132 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Tableau de bord - NexBet Analytics{% endblock %}
+{% block title %}{{ 'dashboard.title'|trans }} - NexBet Analytics{% endblock %}
 
 {% block body %}
 <div class="row mb-4 animate-fade-in">
     <div class="col">
-        <h1 class="h2 mb-3">🎯 Tableau de Bord</h1>
-        <p class="text-muted">Vue d'ensemble de vos analyses de paris sportifs</p>
+        <h1 class="h2 mb-3">
+            <i class="fas fa-chart-line text-primary me-2"></i>
+            {{ 'dashboard.title'|trans }}
+        </h1>
+        <p class="text-muted">{{ 'dashboard.subtitle'|trans }}</p>
+    </div>
+    <div class="col-auto">
+        <button id="syncBtn" class="btn btn-outline-primary btn-sm" onclick="syncMatches()">
+            <i class="fas fa-sync-alt me-1"></i>Synchroniser
+        </button>
     </div>
 </div>
 
+{# Stats cards - valeurs reelles #}
 <div class="row mb-4">
     <div class="col-md-3 mb-3">
         <div class="stat-card text-center hover-lift">
-            <div class="stat-value text-primary">24</div>
-            <div class="stat-label">Matchs Aujourd'hui</div>
+            <div class="stat-value text-primary">{{ stats.total_matches_today|default(0) }}</div>
+            <div class="stat-label">{{ 'dashboard.matches_today'|trans }}</div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="stat-card text-center hover-lift">
-            <div class="stat-value text-success">8</div>
-            <div class="stat-label">Paris Sûrs</div>
+            <div class="stat-value text-success">{{ stats.safe_bets|default(0) }}</div>
+            <div class="stat-label">{{ 'dashboard.safe_bets'|trans }}</div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="stat-card text-center hover-lift">
-            <div class="stat-value text-warning">12</div>
-            <div class="stat-label">Value Bets</div>
+            <div class="stat-value text-warning">{{ stats.value_bets|default(0) }}</div>
+            <div class="stat-label">{{ 'dashboard.value_bets'|trans }}</div>
         </div>
     </div>
     <div class="col-md-3 mb-3">
         <div class="stat-card text-center hover-lift">
-            <div class="stat-value text-info">5</div>
-            <div class="stat-label">Combinaisons</div>
+            <div class="stat-value text-info">{{ stats.high_confidence|default(0) }}</div>
+            <div class="stat-label">Haute confiance</div>
+        </div>
+    </div>
+</div>
+
+{# Section matchs avec analyses completes - pagines en AJAX #}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-futbol me-2"></i>
+                    Matchs a venir - Analyses completes
+                </h5>
+                <div class="d-flex align-items-center gap-2">
+                    <select id="matchesPerPage" class="form-select form-select-sm" style="width: auto;" onchange="loadMatches(1)">
+                        <option value="10">10 matchs</option>
+                        <option value="20" selected>20 matchs</option>
+                        <option value="50">50 matchs</option>
+                    </select>
+                    <a href="{{ path('app_football_predictions_today') }}" class="btn btn-sm btn-outline-primary">
+                        Voir tout
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="matchesContainer" class="table-responsive">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="text-muted mt-2">Chargement des matchs...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer" id="paginationContainer">
+                {# Pagination injectee en JS #}
+            </div>
         </div>
     </div>
 </div>
 
 <div class="row mb-4">
     <div class="col-lg-6 mb-4">
-        <div class="chart-container card-shimmer">
-            <h5 class="mb-4">📊 Statistiques des Prédictions</h5>
-            <canvas id="predictionStatsChart" height="250"></canvas>
+        <div class="simple-chart-container">
+            <h5 class="simple-chart-title">
+                <i class="fas fa-chart-pie"></i>
+                {{ 'dashboard.prediction_stats'|trans }}
+            </h5>
+            <div id="predictionStatsChart"></div>
         </div>
     </div>
     <div class="col-lg-6 mb-4">
-        <div class="chart-container card-shimmer">
-            <h5 class="mb-4">📈 Évolution du ROI</h5>
-            <canvas id="roiChart" height="250"></canvas>
-        </div>
-    </div>
-</div>
-
-<div class="row mb-4">
-    <div class="col-lg-8 mb-4">
-        <div class="chart-container card-shimmer">
-            <h5 class="mb-4">🏆 Performance par Sport</h5>
-            <canvas id="sportPerformanceChart" height="200"></canvas>
-        </div>
-    </div>
-    <div class="col-lg-4 mb-4">
-        <div class="chart-container card-shimmer">
-            <h5 class="mb-4">💰 Répartition des Paris</h5>
-            <canvas id="betDistributionChart" height="200"></canvas>
+        <div class="simple-chart-container">
+            <h5 class="simple-chart-title">
+                <i class="fas fa-chart-line"></i>
+                {{ 'dashboard.roi_evolution'|trans }}
+            </h5>
+            <div id="roiChart"></div>
         </div>
     </div>
 </div>
 
 <div class="row">
     <div class="col-lg-6 mb-4">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
-                <h5 class="mb-0">⚽ Football</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-futbol me-2"></i>
+                    {{ 'sport.football'|trans }}
+                </h5>
             </div>
             <div class="card-body">
-                <p class="card-text">Analyses et prédictions pour les matchs de football</p>
+                <p class="card-text">{{ 'football.description'|trans }}</p>
                 <div class="d-grid gap-2">
                     <a href="{{ path('app_football_predictions_today') }}" class="btn btn-primary">
-                        Voir les prédictions du jour
+                        <i class="fas fa-calendar-day me-1"></i>
+                        {{ 'football.view_predictions_today'|trans }}
                     </a>
-                    <a href="{{ path('app_football_safe_bets') }}" class="btn btn-success">
-                        Paris sûrs
+                    <a href="{{ path('app_football_safest_bets') }}" class="btn btn-success">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Paris les plus surs
                     </a>
-                    <a href="{{ path('app_football_value_bets') }}" class="btn btn-warning">
-                        Value bets
+                    <a href="{{ path('app_football_upcoming') }}" class="btn btn-info">
+                        <i class="fas fa-list me-1"></i>
+                        Tous les matchs
                     </a>
                 </div>
             </div>
@@ -91,15 +134,19 @@
     </div>
 
     <div class="col-lg-6 mb-4">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-header">
-                <h5 class="mb-0">🏀 Basketball</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-basketball-ball me-2"></i>
+                    {{ 'sport.basketball'|trans }}
+                </h5>
             </div>
             <div class="card-body">
-                <p class="card-text">Analyses et prédictions pour les matchs de basketball</p>
+                <p class="card-text">{{ 'basketball.description'|trans }}</p>
                 <div class="d-grid gap-2">
                     <a href="{{ path('app_basketball_predictions_today') }}" class="btn btn-primary">
-                        Voir les prédictions du jour
+                        <i class="fas fa-calendar-day me-1"></i>
+                        {{ 'basketball.view_predictions_today'|trans }}
                     </a>
                 </div>
             </div>
@@ -111,22 +158,25 @@
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">💰 Stratégies de Mise</h5>
+                <h5 class="mb-0">
+                    <i class="fas fa-layer-group me-2"></i>
+                    {{ 'betting.strategies_title'|trans }}
+                </h5>
             </div>
             <div class="card-body">
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <h6>Combinaisons</h6>
-                        <p class="small text-muted">Générez des combinaisons optimales de paris</p>
+                        <h6>{{ 'betting.combinations'|trans }}</h6>
+                        <p class="small text-muted">{{ 'betting.combinations_description'|trans }}</p>
                         <a href="{{ path('app_betting_combinations') }}" class="btn btn-sm btn-outline-primary">
-                            Créer une combinaison
+                            {{ 'betting.create_combination'|trans }}
                         </a>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <h6>Stratégies</h6>
-                        <p class="small text-muted">Stratégies adaptées à votre profil de risque</p>
+                        <h6>{{ 'betting.strategies'|trans }}</h6>
+                        <p class="small text-muted">{{ 'betting.strategies_description'|trans }}</p>
                         <a href="{{ path('app_betting_strategies') }}" class="btn btn-sm btn-outline-primary">
-                            Voir les stratégies
+                            {{ 'betting.view_strategies'|trans }}
                         </a>
                     </div>
                 </div>
@@ -138,45 +188,234 @@
 
 {% block javascripts %}
     {{ parent() }}
-    <script type="module">
-        import {
-            createPredictionStatsChart,
-            createROIChart,
-            createSportPerformanceChart,
-            createBetDistributionChart
-        } from '/assets/scripts/charts.js';
+    {{ importmap('dashboard-charts') }}
 
-        // Données exemple pour les statistiques de prédictions
-        const predictionData = {
-            success: 65,
-            failed: 25,
-            pending: 10
-        };
+    <script>
+    let currentPage = 1;
 
-        // Données exemple pour l'évolution du ROI
-        const roiData = {
-            dates: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil'],
-            roi: [5.2, 8.5, 12.3, 15.8, 18.2, 22.5, 25.8]
-        };
+    document.addEventListener('DOMContentLoaded', function() {
+        loadMatches(1);
+    });
 
-        // Données exemple pour la performance par sport
-        const sportData = {
-            sports: ['Football', 'Basketball', 'Tennis', 'Hockey'],
-            successRates: [68, 72, 61, 55]
-        };
+    function loadMatches(page) {
+        currentPage = page;
+        const limit = document.getElementById('matchesPerPage').value;
+        const container = document.getElementById('matchesContainer');
 
-        // Données exemple pour la répartition des paris
-        const betDistData = {
-            betTypes: ['1X2', 'Over/Under', 'BTTS', 'Handicap', 'Exactscore'],
-            amounts: [35, 25, 20, 12, 8]
-        };
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="text-muted mt-2">Chargement des matchs...</p>
+            </div>
+        `;
 
-        // Initialiser les charts quand le DOM est prêt
-        document.addEventListener('DOMContentLoaded', () => {
-            createPredictionStatsChart('predictionStatsChart', predictionData);
-            createROIChart('roiChart', roiData);
-            createSportPerformanceChart('sportPerformanceChart', sportData);
-            createBetDistributionChart('betDistributionChart', betDistData);
+        fetch(`/api/matches?page=${page}&limit=${limit}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    renderMatchesTable(data.data);
+                    renderPagination(data.pagination);
+                } else {
+                    container.innerHTML = '<div class="text-center py-4 text-muted">Aucun match disponible</div>';
+                    document.getElementById('paginationContainer').innerHTML = '';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                container.innerHTML = '<div class="text-center py-4 text-danger">Erreur de chargement</div>';
+            });
+    }
+
+    function renderMatchesTable(matches) {
+        let html = `
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light sticky-top">
+                    <tr>
+                        <th style="width: 60px;">Heure</th>
+                        <th>Match</th>
+                        <th style="width: 100px;">Championnat</th>
+                        <th class="text-center" style="width: 55px;">1</th>
+                        <th class="text-center" style="width: 55px;">X</th>
+                        <th class="text-center" style="width: 55px;">2</th>
+                        <th class="text-center" style="width: 90px;">Cotes 1X2</th>
+                        <th class="text-center" style="width: 70px;">O/U 2.5</th>
+                        <th class="text-center" style="width: 70px;">BTTS</th>
+                        <th class="text-center" style="width: 80px;">Score</th>
+                        <th class="text-center" style="width: 80px;">Prediction</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        matches.forEach(m => {
+            const confidence = m.confidence || 0;
+            const safeScore = m.safe_score || 0;
+
+            // Badge de prediction
+            const predBadgeClass = confidence >= 70 ? 'bg-success' : confidence >= 50 ? 'bg-warning' : 'bg-secondary';
+
+            // Safe score color
+            const safeScoreClass = safeScore >= 75 ? 'text-success' : safeScore >= 50 ? 'text-warning' : 'text-danger';
+
+            // Cotes 1X2
+            let oddsHtml = '-';
+            if (m.has_odds && m.odds) {
+                oddsHtml = `
+                    <small>
+                        <span class="${m.prediction === '1' ? 'fw-bold text-success' : ''}">${m.odds.home ? m.odds.home.toFixed(2) : '-'}</span> /
+                        <span class="${m.prediction === 'X' ? 'fw-bold text-success' : ''}">${m.odds.draw ? m.odds.draw.toFixed(2) : '-'}</span> /
+                        <span class="${m.prediction === '2' ? 'fw-bold text-success' : ''}">${m.odds.away ? m.odds.away.toFixed(2) : '-'}</span>
+                    </small>
+                `;
+            }
+
+            // Over/Under 2.5
+            let ouHtml = '-';
+            if (m.goals && m.goals.over_25 !== null) {
+                const overProb = m.goals.over_25;
+                const ouClass = overProb >= 60 ? 'text-success' : overProb <= 40 ? 'text-danger' : 'text-warning';
+                ouHtml = `<small class="${ouClass}">O: ${overProb.toFixed(0)}%</small>`;
+            }
+
+            // BTTS
+            let bttsHtml = '-';
+            if (m.btts && m.btts.yes !== null) {
+                const bttsYes = m.btts.yes;
+                const bttsClass = bttsYes >= 60 ? 'text-success' : bttsYes <= 40 ? 'text-danger' : 'text-warning';
+                bttsHtml = `<small class="${bttsClass}">${bttsYes >= 50 ? 'Oui' : 'Non'} ${bttsYes.toFixed(0)}%</small>`;
+            }
+
+            html += `
+                <tr class="${safeScore >= 75 ? 'table-success' : ''}">
+                    <td><strong>${m.match_time}</strong></td>
+                    <td>
+                        <strong>${m.home_team}</strong>
+                        <span class="text-muted mx-1">vs</span>
+                        <strong>${m.away_team}</strong>
+                    </td>
+                    <td><span class="badge bg-secondary text-truncate" style="max-width: 100px;">${m.league}</span></td>
+                    <td class="text-center ${m.prediction === '1' ? 'table-success fw-bold' : ''}">
+                        ${m.probabilities['1'].toFixed(0)}%
+                    </td>
+                    <td class="text-center ${m.prediction === 'X' ? 'table-success fw-bold' : ''}">
+                        ${m.probabilities['X'].toFixed(0)}%
+                    </td>
+                    <td class="text-center ${m.prediction === '2' ? 'table-success fw-bold' : ''}">
+                        ${m.probabilities['2'].toFixed(0)}%
+                    </td>
+                    <td class="text-center">${oddsHtml}</td>
+                    <td class="text-center">${ouHtml}</td>
+                    <td class="text-center">${bttsHtml}</td>
+                    <td class="text-center">
+                        <span class="badge ${safeScoreClass} bg-opacity-25 ${safeScoreClass.replace('text-', 'border-')} border">
+                            <i class="fas fa-shield-alt me-1"></i>${safeScore.toFixed(0)}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <span class="badge ${predBadgeClass}">${m.prediction}</span>
+                        <small class="text-muted d-block">${confidence.toFixed(0)}%</small>
+                    </td>
+                </tr>
+            `;
         });
+
+        html += '</tbody></table>';
+        document.getElementById('matchesContainer').innerHTML = html;
+    }
+
+    function renderPagination(pagination) {
+        const { page, pages, total } = pagination;
+
+        if (pages <= 1) {
+            document.getElementById('paginationContainer').innerHTML =
+                `<small class="text-muted">${total} match(s) au total</small>`;
+            return;
+        }
+
+        let html = `
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted">Page ${page} sur ${pages} (${total} matchs)</small>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+        `;
+
+        // Previous
+        html += `
+            <li class="page-item ${page === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="loadMatches(${page - 1}); return false;">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+            </li>
+        `;
+
+        // Page numbers
+        const startPage = Math.max(1, page - 2);
+        const endPage = Math.min(pages, page + 2);
+
+        if (startPage > 1) {
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadMatches(1); return false;">1</a></li>`;
+            if (startPage > 2) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            html += `
+                <li class="page-item ${i === page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadMatches(${i}); return false;">${i}</a>
+                </li>
+            `;
+        }
+
+        if (endPage < pages) {
+            if (endPage < pages - 1) {
+                html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+            }
+            html += `<li class="page-item"><a class="page-link" href="#" onclick="loadMatches(${pages}); return false;">${pages}</a></li>`;
+        }
+
+        // Next
+        html += `
+            <li class="page-item ${page === pages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="loadMatches(${page + 1}); return false;">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        `;
+
+        html += `
+                    </ul>
+                </nav>
+            </div>
+        `;
+
+        document.getElementById('paginationContainer').innerHTML = html;
+    }
+
+    function syncMatches() {
+        const btn = document.getElementById('syncBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Sync...';
+
+        fetch('/api/dashboard/sync', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    loadMatches(1);
+                } else {
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('Erreur de synchronisation');
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Synchroniser';
+            });
+    }
     </script>
 {% endblock %}

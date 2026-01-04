@@ -1,60 +1,606 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Combinaisons de Paris - NexBet Analytics{% endblock %}
+{% block title %}{{ 'betting.combinations'|trans }} - NexBet Analytics{% endblock %}
 
 {% block body %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="h2 mb-3">💰 Générateur de Combinaisons</h1>
-        <p class="text-muted">Créez des combinaisons optimales de paris</p>
-    </div>
-</div>
-
-<div class="alert alert-info">
-    <h5 class="alert-heading">Fonctionnalité en développement</h5>
-    <p class="mb-0">Le générateur de combinaisons sera disponible prochainement. Il vous permettra de créer des systèmes comme Trixie, Patent, Yankee avec calcul automatique des gains potentiels.</p>
-</div>
-
-<div class="row">
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">Trixie</div>
-            <div class="card-body">
-                <p class="small">3 sélections → 4 paris</p>
-                <ul class="small">
-                    <li>3 doubles</li>
-                    <li>1 triple</li>
-                </ul>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="bi bi-layers text-primary me-2"></i>
+                        Generateur de Combinaisons
+                    </h1>
+                    <p class="text-muted mb-0">Creez des systemes de paris optimaux bases sur nos predictions</p>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small" id="lastUpdate">
+                        <i class="bi bi-clock me-1"></i>
+                        Mis a jour: {{ last_update|date('H:i:s') }}
+                    </span>
+                    <button type="button" class="btn btn-primary" id="refreshBtn" onclick="refreshCombinations()">
+                        <i class="bi bi-arrow-clockwise me-1" id="refreshIcon"></i>
+                        Rafraichir
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">Patent</div>
-            <div class="card-body">
-                <p class="small">3 sélections → 7 paris</p>
-                <ul class="small">
-                    <li>3 simples</li>
-                    <li>3 doubles</li>
-                    <li>1 triple</li>
-                </ul>
+    {# Filtres par sport #}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="btn-group" role="group">
+                <a href="{{ path('app_betting_combinations', {sport: 'all'}) }}"
+                   class="btn {% if current_sport == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="bi bi-grid-3x3-gap me-1"></i> Tous
+                </a>
+                <a href="{{ path('app_betting_combinations', {sport: 'football'}) }}"
+                   class="btn {% if current_sport == 'football' %}btn-success{% else %}btn-outline-success{% endif %}">
+                    <i class="bi bi-circle-fill me-1"></i> Football
+                </a>
+                <a href="{{ path('app_betting_combinations', {sport: 'basketball'}) }}"
+                   class="btn {% if current_sport == 'basketball' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                    <i class="bi bi-dribbble me-1"></i> Basketball
+                </a>
+                <a href="{{ path('app_betting_combinations', {sport: 'hockey'}) }}"
+                   class="btn {% if current_sport == 'hockey' %}btn-info{% else %}btn-outline-info{% endif %}">
+                    <i class="bi bi-disc me-1"></i> Hockey
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">Yankee</div>
-            <div class="card-body">
-                <p class="small">4 sélections → 11 paris</p>
-                <ul class="small">
-                    <li>6 doubles</li>
-                    <li>4 triples</li>
-                    <li>1 quadruple</li>
-                </ul>
+    {# Selections disponibles #}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Selections disponibles ({{ predictions|length }})
+                    </h5>
+                    <div>
+                        <label class="me-2">Mise unitaire:</label>
+                        <input type="number" id="unitStake" value="10" min="1" max="1000" class="form-control d-inline-block" style="width: 100px;" onchange="updateCalculations()">
+                        <span class="ms-1">EUR</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="predictionsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 40px;">#</th>
+                                    <th style="width: 80px;">Sport</th>
+                                    <th style="width: 80px;">Heure</th>
+                                    <th>Match</th>
+                                    <th class="text-center">Prediction</th>
+                                    <th class="text-center">Cotes</th>
+                                    <th class="text-center">Probabilite</th>
+                                    <th class="text-center">Confiance</th>
+                                    <th class="text-center">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i, prediction in predictions %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ i + 1 }}</span></td>
+                                    <td>
+                                        <span class="badge bg-{{ prediction.sport_color }}">
+                                            <i class="{{ prediction.sport_icon }} me-1"></i>
+                                            {{ prediction.sport|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ prediction.match_date|date('H:i') }}
+                                        </span>
+                                        <br>
+                                        <small class="text-muted">{{ prediction.match_date|date('d/m') }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ prediction.home_team }}</strong>
+                                        <span class="text-muted">vs</span>
+                                        <strong>{{ prediction.away_team }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ prediction.league }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary fs-6">
+                                            {{ prediction.prediction_label|default(prediction.prediction) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <strong class="text-success fs-5">{{ prediction.odds|number_format(2) }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {% if prediction.sport == 'football' %}
+                                                1: {{ prediction.all_odds['1']|number_format(2) }} |
+                                                X: {{ prediction.all_odds['X']|number_format(2) }} |
+                                                2: {{ prediction.all_odds['2']|number_format(2) }}
+                                            {% else %}
+                                                Dom: {{ prediction.all_odds.home|number_format(2) }} |
+                                                Ext: {{ prediction.all_odds.away|number_format(2) }}
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary">{{ prediction.probability|number_format(1) }}%</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="progress" style="height: 20px; width: 80px; margin: 0 auto;">
+                                            <div class="progress-bar {% if prediction.confidence >= 75 %}bg-success{% elseif prediction.confidence >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                                 style="width: {{ prediction.confidence }}%">
+                                                {{ prediction.confidence|number_format(0) }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if prediction.is_safe_bet %}
+                                            <span class="badge bg-success"><i class="bi bi-shield-check"></i> Sur</span>
+                                        {% endif %}
+                                        {% if prediction.is_value_bet %}
+                                            <span class="badge bg-warning text-dark"><i class="bi bi-gem"></i> Value</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                                        Aucune prediction disponible
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Resume des sports #}
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-circle-fill display-4 mb-2"></i>
+                    <h3 class="mb-0">{{ predictions|filter(p => p.sport == 'football')|length }}</h3>
+                    <small>Matchs Football</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-dribbble display-4 mb-2"></i>
+                    <h3 class="mb-0">{{ predictions|filter(p => p.sport == 'basketball')|length }}</h3>
+                    <small>Matchs Basketball</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                    <i class="bi bi-disc display-4 mb-2"></i>
+                    <h3 class="mb-0">{{ predictions|filter(p => p.sport == 'hockey')|length }}</h3>
+                    <small>Matchs Hockey</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Systemes de paris #}
+    {% if systems|length > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">
+                <i class="bi bi-boxes me-2"></i>
+                Systemes de Paris
+            </h4>
+        </div>
+
+        {% if systems.trixie is defined and systems.trixie.combinations is defined %}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-primary shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-dice-3 me-2"></i>
+                        Trixie
+                    </h5>
+                    <small>3 selections - 4 paris</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info py-2 mb-3">
+                        <small><strong>Minimum gagnant:</strong> 2 selections</small>
+                    </div>
+
+                    <h6>Combinaisons:</h6>
+                    <ul class="list-unstyled small">
+                        {% for i, combo in systems.trixie.combinations %}
+                        <li class="mb-2 p-2 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>
+                                    {% if combo.bets|length == 2 %}
+                                        <span class="badge bg-secondary">Double</span>
+                                    {% else %}
+                                        <span class="badge bg-dark">Triple</span>
+                                    {% endif %}
+                                    {% for bet in combo.bets %}
+                                        <span class="badge bg-{{ bet.sport_color|default('secondary') }} ms-1">
+                                            {{ bet.home_team|slice(0,3) }}
+                                        </span>
+                                    {% endfor %}
+                                </span>
+                                <strong class="text-success">{{ combo.odds|number_format(2) }}</strong>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Mise totale:</span>
+                        <strong class="trixie-total-stake">40 EUR</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Gain max:</span>
+                        {% set maxOdds = 0 %}
+                        {% for combo in systems.trixie.combinations %}
+                            {% set maxOdds = maxOdds + combo.odds %}
+                        {% endfor %}
+                        <strong class="text-success trixie-max-gain">{{ (maxOdds * 10)|number_format(2) }} EUR</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if systems.patent is defined and systems.patent.combinations is defined %}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-success shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-award me-2"></i>
+                        Patent
+                    </h5>
+                    <small>3 selections - 7 paris</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-success py-2 mb-3">
+                        <small><strong>Minimum gagnant:</strong> 1 selection</small>
+                    </div>
+
+                    <h6>Combinaisons:</h6>
+                    <ul class="list-unstyled small" style="max-height: 200px; overflow-y: auto;">
+                        {% for combo in systems.patent.combinations %}
+                        <li class="mb-2 p-2 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>
+                                    {% if combo.bets|length == 1 %}
+                                        <span class="badge bg-info">Simple</span>
+                                    {% elseif combo.bets|length == 2 %}
+                                        <span class="badge bg-secondary">Double</span>
+                                    {% else %}
+                                        <span class="badge bg-dark">Triple</span>
+                                    {% endif %}
+                                    {% for bet in combo.bets %}
+                                        <span class="badge bg-{{ bet.sport_color|default('secondary') }} ms-1">
+                                            {{ bet.home_team|slice(0,3) }}
+                                        </span>
+                                    {% endfor %}
+                                </span>
+                                <strong class="text-success">{{ combo.odds|number_format(2) }}</strong>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Mise totale:</span>
+                        <strong class="patent-total-stake">70 EUR</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Gain max:</span>
+                        {% set maxOdds = 0 %}
+                        {% for combo in systems.patent.combinations %}
+                            {% set maxOdds = maxOdds + combo.odds %}
+                        {% endfor %}
+                        <strong class="text-success patent-max-gain">{{ (maxOdds * 10)|number_format(2) }} EUR</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if systems.yankee is defined and systems.yankee.combinations is defined %}
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 border-warning shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trophy me-2"></i>
+                        Yankee
+                    </h5>
+                    <small>4 selections - 11 paris</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning py-2 mb-3">
+                        <small><strong>Minimum gagnant:</strong> 2 selections</small>
+                    </div>
+
+                    <h6>Combinaisons:</h6>
+                    <ul class="list-unstyled small" style="max-height: 200px; overflow-y: auto;">
+                        {% for combo in systems.yankee.combinations %}
+                        <li class="mb-2 p-2 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>
+                                    {% if combo.bets|length == 2 %}
+                                        <span class="badge bg-secondary">Double</span>
+                                    {% elseif combo.bets|length == 3 %}
+                                        <span class="badge bg-dark">Triple</span>
+                                    {% else %}
+                                        <span class="badge bg-primary">Quadruple</span>
+                                    {% endif %}
+                                    {% for bet in combo.bets %}
+                                        <span class="badge bg-{{ bet.sport_color|default('secondary') }} ms-1">
+                                            {{ bet.home_team|slice(0,3) }}
+                                        </span>
+                                    {% endfor %}
+                                </span>
+                                <strong class="text-success">{{ combo.odds|number_format(2) }}</strong>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span>Mise totale:</span>
+                        <strong class="yankee-total-stake">110 EUR</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Gain max:</span>
+                        {% set maxOdds = 0 %}
+                        {% for combo in systems.yankee.combinations %}
+                            {% set maxOdds = maxOdds + combo.odds %}
+                        {% endfor %}
+                        <strong class="text-success yankee-max-gain">{{ (maxOdds * 10)|number_format(2) }} EUR</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {# Combinaisons sures #}
+    {% if safe_combinations|length > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-shield-check me-2"></i>
+                        Combinaisons Sures ({{ safe_combinations|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for combo in safe_combinations %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 {% if combo.confidence >= 80 %}border-success{% endif %}">
+                                <div class="card-header py-2">
+                                    <span class="badge {% if combo.type == 'simple' %}bg-info{% elseif combo.type == 'combination_2' %}bg-secondary{% else %}bg-dark{% endif %}">
+                                        {% if combo.type == 'simple' %}Simple{% elseif combo.type == 'combination_2' %}Double{% else %}Triple{% endif %}
+                                    </span>
+                                    <span class="float-end badge bg-success">{{ combo.confidence|number_format(0) }}%</span>
+                                </div>
+                                <div class="card-body py-2">
+                                    {% for bet in combo.bets %}
+                                    <div class="small mb-1 d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <span class="badge bg-{{ bet.sport_color|default('secondary') }} me-1">
+                                                <i class="{{ bet.sport_icon|default('bi-circle') }}"></i>
+                                            </span>
+                                            {{ bet.home_team }} vs {{ bet.away_team }}
+                                        </span>
+                                        <span class="badge bg-primary">{{ bet.prediction }}</span>
+                                    </div>
+                                    {% if bet.match_date is defined %}
+                                    <small class="text-muted d-block mb-1">
+                                        <i class="bi bi-clock me-1"></i>{{ bet.match_date|date('H:i') }}
+                                    </small>
+                                    {% endif %}
+                                    {% endfor %}
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between small">
+                                        <span>Cote totale:</span>
+                                        <strong class="text-success">{{ combo.odds|number_format(2) }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span>Gain potentiel (10 EUR):</span>
+                                        <strong>{{ (combo.odds * 10)|number_format(2) }} EUR</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Combinaisons Value #}
+    {% if value_combinations|length > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-warning shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-gem me-2"></i>
+                        Combinaisons Value ({{ value_combinations|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for combo in value_combinations %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header py-2">
+                                    <span class="badge bg-warning text-dark">Value</span>
+                                    <span class="float-end">EV: {{ combo.expected_value|number_format(2) }}</span>
+                                </div>
+                                <div class="card-body py-2">
+                                    {% for bet in combo.bets %}
+                                    <div class="small mb-1 d-flex justify-content-between align-items-center">
+                                        <span>
+                                            <span class="badge bg-{{ bet.sport_color|default('secondary') }} me-1">
+                                                <i class="{{ bet.sport_icon|default('bi-circle') }}"></i>
+                                            </span>
+                                            {{ bet.home_team }} vs {{ bet.away_team }}
+                                        </span>
+                                        <span class="badge bg-primary">{{ bet.prediction }}</span>
+                                    </div>
+                                    {% endfor %}
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between small">
+                                        <span>Cote totale:</span>
+                                        <strong class="text-success">{{ combo.odds|number_format(2) }}</strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between small">
+                                        <span>Probabilite:</span>
+                                        <strong>{{ combo.success_probability|number_format(1) }}%</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Info sur les systemes #}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Guide des Systemes de Paris
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <h6><i class="bi bi-dice-3 text-primary me-2"></i>Trixie</h6>
+                            <p class="small text-muted">
+                                3 selections, 4 paris (3 doubles + 1 triple).
+                                Necessite au moins 2 selections gagnantes pour un retour.
+                                Risque modere, gains potentiels interessants.
+                            </p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6><i class="bi bi-award text-success me-2"></i>Patent</h6>
+                            <p class="small text-muted">
+                                3 selections, 7 paris (3 simples + 3 doubles + 1 triple).
+                                Une seule selection gagnante suffit pour un retour.
+                                Plus securisant mais mise totale plus elevee.
+                            </p>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <h6><i class="bi bi-trophy text-warning me-2"></i>Yankee</h6>
+                            <p class="small text-muted">
+                                4 selections, 11 paris (6 doubles + 4 triples + 1 quadruple).
+                                Necessite 2 gagnants minimum. Gains potentiels tres eleves
+                                si toutes les selections sont gagnantes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+function updateCalculations() {
+    const stake = parseFloat(document.getElementById('unitStake').value) || 10;
+
+    // Trixie (4 paris)
+    document.querySelectorAll('.trixie-total-stake').forEach(el => {
+        el.textContent = (stake * 4).toFixed(2) + ' EUR';
+    });
+
+    // Patent (7 paris)
+    document.querySelectorAll('.patent-total-stake').forEach(el => {
+        el.textContent = (stake * 7).toFixed(2) + ' EUR';
+    });
+
+    // Yankee (11 paris)
+    document.querySelectorAll('.yankee-total-stake').forEach(el => {
+        el.textContent = (stake * 11).toFixed(2) + ' EUR';
+    });
+}
+
+function refreshCombinations() {
+    const btn = document.getElementById('refreshBtn');
+    const icon = document.getElementById('refreshIcon');
+    const currentSport = '{{ current_sport }}';
+
+    // Disable button and show loading
+    btn.disabled = true;
+    icon.classList.add('spin');
+
+    fetch(`{{ path('api_betting_combinations_refresh') }}?sport=${currentSport}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update last update time
+                document.getElementById('lastUpdate').innerHTML =
+                    '<i class="bi bi-clock me-1"></i>Mis a jour: ' + data.data.last_update;
+
+                // Reload the page to show new data
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing:', error);
+            alert('Erreur lors du rafraichissement');
+        })
+        .finally(() => {
+            btn.disabled = false;
+            icon.classList.remove('spin');
+        });
+}
+
+document.addEventListener('DOMContentLoaded', updateCalculations);
+
+// Auto-refresh every 5 minutes
+setInterval(() => {
+    refreshCombinations();
+}, 300000);
+</script>
+
+<style>
+.spin {
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
 {% endblock %}

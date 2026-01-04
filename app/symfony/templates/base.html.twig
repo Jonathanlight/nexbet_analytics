@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="{{ app.request.locale }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,27 +18,38 @@
     <body>
         <nav class="navbar navbar-expand-lg navbar-dark">
             <div class="container-fluid">
-                <a class="navbar-brand" href="{{ path('app_dashboard') }}">🎯 NexBet Analytics</a>
+                <a class="navbar-brand" href="{{ path('app_dashboard_authenticated') }}">🎯 NexBet Analytics</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_dashboard') }}">Tableau de bord</a>
+                            <a class="nav-link" href="{{ path('app_dashboard_authenticated') }}">{{ 'nav.dashboard'|trans }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_football_predictions_today') }}">Football</a>
+                            <a class="nav-link" href="{{ path('app_football_predictions_today') }}">{{ 'sport.football'|trans }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_basketball_predictions_today') }}">Basketball</a>
+                            <a class="nav-link" href="{{ path('app_basketball_predictions_today') }}">{{ 'sport.basketball'|trans }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_betting_combinations') }}">Combinaisons</a>
+                            <a class="nav-link" href="{{ path('app_hockey_predictions_today') }}">{{ 'sport.hockey'|trans }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ path('app_betting_strategies') }}">Stratégies</a>
+                            <a class="nav-link" href="{{ path('app_betting_combinations') }}">{{ 'betting.combinations'|trans }}</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ path('app_betting_strategies') }}">{{ 'betting.strategies'|trans }}</a>
+                        </li>
+                        {% if app.user %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ path('app_profile') }}">👤 {{ app.user.name }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ path('app_logout') }}">🚪 {{ 'nav.logout'|trans }}</a>
+                        </li>
+                        {% endif %}
                     </ul>
                 </div>
             </div>
@@ -49,7 +60,7 @@
         </div>
 
         <footer class="footer text-center mt-5 py-4">
-            <p class="mb-0">&copy; 2026 NexBet Analytics - Analyse de paris sportifs basée sur l'IA</p>
+            <p class="mb-0">{{ 'footer.copyright'|trans({'%year%': 'now'|date('Y')}) }}</p>
         </footer>
     </body>
 </html>

@@ -346,4 +346,9 @@ class Team
 
         return round(($this->wins ?? 0) / $this->matchesPlayed * 100, 2);
     }
+
+    public function __toString(): string
+    {
+        return $this->name;
+    }
 }

@@ -327,6 +327,3 @@ export function initializeCharts() {
     // Les charts seront initialisés via les fonctions d'export ci-dessus
     console.log('Chart.js module loaded and ready');
 }
-
-// Auto-initialisation
-document.addEventListener('DOMContentLoaded', initializeCharts);

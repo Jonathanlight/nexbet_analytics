@@ -8,6 +8,7 @@ use App\Service\Data\Adapter\ApiFootballAdapter;
 use App\Service\Data\Adapter\FootballDataApiAdapter;
 use App\Service\Data\Adapter\OpenWeatherApiAdapter;
 use App\Service\Data\Adapter\TheOddsApiAdapter;
+use App\Service\Data\Adapter\UnibetAdapter;
 use App\Service\Data\DTO\MatchData;
 use App\Service\Data\Interface\MatchDataProviderInterface;
 
@@ -27,9 +28,12 @@ final class MatchDataAggregatorService
         private readonly FootballDataApiAdapter $footballDataAdapter,
         private readonly ApiFootballAdapter $apiFootballAdapter,
         private readonly OpenWeatherApiAdapter $weatherAdapter,
+        private readonly UnibetAdapter $unibetAdapter,
     ) {
         // Ordre de priorité des providers
+        // Unibet en premier car il a le plus de matchs (bookmaker direct)
         $this->providers = [
+            $this->unibetAdapter,           // Bookmaker direct - tous les matchs disponibles
             $this->apiFootballAdapter,      // Le plus complet pour les données de match
             $this->footballDataAdapter,     // Bon pour les stats détaillées
             $this->oddsApiAdapter,          // Spécialisé dans les cotes
@@ -86,12 +90,12 @@ final class MatchDataAggregatorService
             }
 
             $matchData = $provider->fetchMatchDetails($matchId);
-            if ($matchData !== null) {
+            if (null !== $matchData) {
                 break;
             }
         }
 
-        if ($matchData === null) {
+        if (null === $matchData) {
             return null;
         }
 
@@ -109,18 +113,18 @@ final class MatchDataAggregatorService
      */
     public function enrichWithWeather(MatchData $match): MatchData
     {
-        if ($match->venue === null) {
+        if (null === $match->venue) {
             return $match;
         }
 
         // Extraire la ville du nom du stade si possible
         $city = $this->extractCityFromVenue($match->venue);
-        if ($city === null) {
+        if (null === $city) {
             return $match;
         }
 
         $weather = $this->weatherAdapter->fetchWeatherForVenue($city);
-        if ($weather === null) {
+        if (null === $weather) {
             return $match;
         }
 
@@ -202,6 +206,10 @@ final class MatchDataAggregatorService
     public function getProvidersStatus(): array
     {
         return [
+            'unibet' => [
+                'name' => $this->unibetAdapter->getName(),
+                'available' => $this->unibetAdapter->isAvailable(),
+            ],
             'api_football' => [
                 'name' => $this->apiFootballAdapter->getName(),
                 'available' => $this->apiFootballAdapter->isAvailable(),
@@ -225,6 +233,7 @@ final class MatchDataAggregatorService
      * Déduplique les matchs en fonction des équipes et de la date.
      *
      * @param MatchData[] $matches
+     *
      * @return MatchData[]
      */
     private function deduplicateMatches(array $matches): array
@@ -290,7 +299,7 @@ final class MatchDataAggregatorService
         ];
 
         foreach ($venueToCity as $stadiumName => $city) {
-            if (stripos($venue, $stadiumName) !== false) {
+            if (false !== stripos($venue, $stadiumName)) {
                 return $city;
             }
         }

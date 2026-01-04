@@ -180,7 +180,7 @@ class Odds
 
     private function calculateImpliedProbability(): void
     {
-        if ($this->odds > 0) {
+        if (isset($this->odds) && $this->odds > 0) {
             $this->impliedProbability = 1 / $this->odds;
         }
     }

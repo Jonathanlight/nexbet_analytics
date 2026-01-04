@@ -11,13 +11,11 @@ use App\Service\Data\Interface\CacheInterface;
  */
 final class FileCacheService implements CacheInterface
 {
-    private const CACHE_DIR = '/var/cache/nexbet';
-
     public function __construct(
-        private readonly string $cacheDir = self::CACHE_DIR,
+        private readonly string $cacheDir,
     ) {
         if (!is_dir($this->cacheDir)) {
-            mkdir($this->cacheDir, 0755, true);
+            @mkdir($this->cacheDir, 0755, true);
         }
     }
 

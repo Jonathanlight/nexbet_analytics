@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Service\Math;
 
+use App\Service\Math\Interface\MonteCarloInterface;
+
 /**
  * Service de simulation Monte Carlo pour les prédictions sportives.
  * Effectue des milliers de simulations pour estimer les probabilités.
  */
-class MonteCarloSimulator
+class MonteCarloSimulator implements MonteCarloInterface
 {
     private const DEFAULT_SIMULATIONS = 10000;
 
@@ -96,10 +98,10 @@ class MonteCarloSimulator
         ];
 
         for ($i = 0; $i < $simulations; ++$i) {
-            $homePoints = max(0, round($this->normalRandom($homeAvgPoints, $homeStdDev)));
-            $awayPoints = max(0, round($this->normalRandom($awayAvgPoints, $awayStdDev)));
+            $homePoints = (int) max(0, round($this->normalRandom($homeAvgPoints, $homeStdDev)));
+            $awayPoints = (int) max(0, round($this->normalRandom($awayAvgPoints, $awayStdDev)));
 
-            $pointDiff = abs($homePoints - $awayPoints);
+            $pointDiff = (int) abs($homePoints - $awayPoints);
             $totalPoints = $homePoints + $awayPoints;
 
             // Résultat

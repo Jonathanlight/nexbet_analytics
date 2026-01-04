@@ -1,0 +1,284 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hockey - Matchs du {{ current_date|date('d/m/Y') }}{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="h3 mb-0">
+                    <i class="bi bi-disc me-2"></i>
+                    Hockey - {{ current_date|date('d F Y') }}
+                </h1>
+                <div class="btn-group">
+                    <a href="{{ path('app_hockey_daily', {date: prev_date|date('Y-m-d')}) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-chevron-left"></i> Jour precedent
+                    </a>
+                    <a href="{{ path('app_hockey_daily') }}" class="btn btn-outline-primary">Aujourd'hui</a>
+                    <a href="{{ path('app_hockey_daily', {date: next_date|date('Y-m-d')}) }}" class="btn btn-outline-secondary">
+                        Jour suivant <i class="bi bi-chevron-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Statistiques du jour #}
+    <div class="row mb-4">
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 mb-0">{{ daily_data.stats.total }}</h2>
+                    <small>Matchs Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 mb-0">{{ daily_data.stats.finished }}</h2>
+                    <small>Termines</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 mb-0">{{ daily_data.stats.live }}</h2>
+                    <small>En cours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body text-center">
+                    <h2 class="display-6 mb-0">{{ daily_data.stats.upcoming }}</h2>
+                    <small>A venir</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Precision des predictions #}
+    {% if daily_data.stats.finished > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Precision des Predictions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 text-center">
+                            <div class="display-4 fw-bold {% if daily_data.stats.accuracy_rate >= 60 %}text-success{% elseif daily_data.stats.accuracy_rate >= 40 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ daily_data.stats.accuracy_rate }}%
+                            </div>
+                            <p class="text-muted mb-0">Precision aujourd'hui</p>
+                            <small class="text-muted">{{ daily_data.stats.correct_predictions }}/{{ daily_data.stats.finished }} predictions correctes</small>
+                        </div>
+                        <div class="col-md-8">
+                            <h6>Precision sur 7 jours</h6>
+                            <div class="progress mb-2" style="height: 25px;">
+                                <div class="progress-bar {% if overall_stats.accuracy_rate >= 60 %}bg-success{% elseif overall_stats.accuracy_rate >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+                                     role="progressbar"
+                                     style="width: {{ overall_stats.accuracy_rate }}%">
+                                    {{ overall_stats.accuracy_rate }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {# Liste des matchs #}
+    <div class="row">
+        <div class="col-12">
+            {% if daily_data.matches|length > 0 %}
+                {# Matchs termines #}
+                {% set finished_matches = daily_data.matches|filter(m => m.is_finished) %}
+                {% if finished_matches|length > 0 %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-check-circle me-2"></i>Matchs Termines ({{ finished_matches|length }})</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Match</th>
+                                        <th class="text-center">Score Final</th>
+                                        <th class="text-center">Prediction</th>
+                                        <th class="text-center">Resultat Reel</th>
+                                        <th class="text-center">Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for data in finished_matches %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ path('app_hockey_match_analysis', {id: data.match.id}) }}" class="text-decoration-none">
+                                                <strong>{{ data.match.homeTeam.name }}</strong> vs <strong>{{ data.match.awayTeam.name }}</strong>
+                                            </a>
+                                            <br>
+                                            <small class="text-muted">{{ data.match.league }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-dark fs-6">{{ data.home_score }} - {{ data.away_score }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge {% if data.predicted_winner == 'home' %}bg-primary{% else %}bg-info{% endif %}">
+                                                {% if data.predicted_winner == 'home' %}{{ data.match.homeTeam.name }}{% else %}{{ data.match.awayTeam.name }}{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge {% if data.actual_winner == 'home' %}bg-primary{% elseif data.actual_winner == 'away' %}bg-info{% else %}bg-secondary{% endif %}">
+                                                {% if data.actual_winner == 'home' %}{{ data.match.homeTeam.name }}{% elseif data.actual_winner == 'away' %}{{ data.match.awayTeam.name }}{% else %}Nul{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if data.prediction_correct %}
+                                                <span class="badge bg-success"><i class="bi bi-check-lg"></i> Correct</span>
+                                            {% else %}
+                                                <span class="badge bg-danger"><i class="bi bi-x-lg"></i> Incorrect</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Matchs en cours #}
+                {% set live_matches = daily_data.matches|filter(m => m.is_live) %}
+                {% if live_matches|length > 0 %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="bi bi-broadcast me-2"></i>Matchs En Cours ({{ live_matches|length }})</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Statut</th>
+                                        <th>Match</th>
+                                        <th class="text-center">Score</th>
+                                        <th class="text-center">Notre Prediction</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for data in live_matches %}
+                                    <tr class="table-warning">
+                                        <td><span class="badge bg-danger pulse">{{ data.status }}</span></td>
+                                        <td>
+                                            <strong>{{ data.match.homeTeam.name }}</strong> vs <strong>{{ data.match.awayTeam.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ data.match.league }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-dark fs-6">{{ data.home_score ?? '0' }} - {{ data.away_score ?? '0' }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge {% if data.predicted_winner == 'home' %}bg-primary{% else %}bg-info{% endif %}">
+                                                {% if data.predicted_winner == 'home' %}{{ data.match.homeTeam.name }}{% else %}{{ data.match.awayTeam.name }}{% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {# Matchs a venir #}
+                {% set upcoming_matches = daily_data.matches|filter(m => m.is_upcoming) %}
+                {% if upcoming_matches|length > 0 %}
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="bi bi-clock me-2"></i>Matchs A Venir ({{ upcoming_matches|length }})</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Heure</th>
+                                        <th>Match</th>
+                                        <th class="text-center">Prediction</th>
+                                        <th class="text-center">Probabilites</th>
+                                        <th class="text-center">Qualite</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for data in upcoming_matches %}
+                                    <tr>
+                                        <td class="text-muted">{{ data.match.matchDate|date('H:i') }}</td>
+                                        <td>
+                                            <strong>{{ data.match.homeTeam.name }}</strong> vs <strong>{{ data.match.awayTeam.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ data.match.league }}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge {% if data.predicted_winner == 'home' %}bg-primary{% else %}bg-info{% endif %} fs-6">
+                                                {% if data.predicted_winner == 'home' %}{{ data.match.homeTeam.name }}{% else %}{{ data.match.awayTeam.name }}{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary me-1">Dom: {{ data.result_prediction.home|number_format(0) }}%</span>
+                                            <span class="badge bg-info">Ext: {{ data.result_prediction.away|number_format(0) }}%</span>
+                                        </td>
+                                        <td class="text-center">
+                                            {% if data.data_quality == 'high' %}
+                                                <span class="badge bg-success">Haute</span>
+                                            {% elseif data.data_quality == 'medium' %}
+                                                <span class="badge bg-warning text-dark">Moyenne</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Estimee</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="{{ path('app_hockey_match_analysis', {id: data.match.id}) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Aucun match de hockey programme pour cette date.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.pulse {
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}

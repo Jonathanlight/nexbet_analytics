@@ -1,0 +1,142 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Paris les plus surs - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-3">
+                <i class="fas fa-shield-alt text-success me-2"></i>
+                Paris les plus surs du jour
+            </h1>
+            <p class="text-muted">Matchs tries par score de securite (combinaison probabilite, confiance, ecart, analyse IA)</p>
+        </div>
+    </div>
+
+    {% if summary is defined %}
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.total_matches }}</h3>
+                    <small>Matchs analyses</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.with_ai_analysis }}</h3>
+                    <small>Avec analyse IA</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>{{ summary.high_confidence }}</h3>
+                    <small>Haute confiance (80%+)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ summary.avg_safe_score|number_format(1) }}%</h3>
+                    <small>Score moyen</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if safest_bets is empty %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Aucun match avec un score de securite suffisant pour aujourd'hui.
+    </div>
+    {% else %}
+    <div class="row">
+        {% for item in safest_bets %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 {% if item.safe_score >= 80 %}border-success{% elseif item.safe_score >= 60 %}border-warning{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary me-2">{{ item.match.league }}</span>
+                        <small class="text-muted">{{ item.match.matchDate|date('H:i') }}</small>
+                    </div>
+                    <div>
+                        <span class="badge {% if item.safe_score >= 80 %}bg-success{% elseif item.safe_score >= 60 %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                            <i class="fas fa-shield-alt me-1"></i>{{ item.safe_score|number_format(1) }}%
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {{ item.match.homeTeam.name }}
+                        <span class="text-muted">vs</span>
+                        {{ item.match.awayTeam.name }}
+                    </h5>
+
+                    <div class="row mb-3">
+                        <div class="col-4 text-center">
+                            <div class="{% if item.prediction.prediction == '1' %}bg-success text-white{% else %}bg-light{% endif %} rounded p-2">
+                                <strong>1</strong><br>
+                                {{ item.prediction.probabilities['1']|number_format(1) }}%
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="{% if item.prediction.prediction == 'X' %}bg-success text-white{% else %}bg-light{% endif %} rounded p-2">
+                                <strong>X</strong><br>
+                                {{ item.prediction.probabilities['X']|number_format(1) }}%
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="{% if item.prediction.prediction == '2' %}bg-success text-white{% else %}bg-light{% endif %} rounded p-2">
+                                <strong>2</strong><br>
+                                {{ item.prediction.probabilities['2']|number_format(1) }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <small class="text-muted">Confiance:</small>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar {% if item.prediction.confidence >= 80 %}bg-success{% elseif item.prediction.confidence >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                 role="progressbar"
+                                 style="width: {{ item.prediction.confidence }}%">
+                                {{ item.prediction.confidence|number_format(1) }}%
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if item.ai_research.has_ai_analysis %}
+                    <div class="alert alert-info py-2 mb-2">
+                        <small>
+                            <i class="fas fa-robot me-1"></i>
+                            <strong>Analyse IA:</strong> {{ item.ai_research.analysis_summary }}
+                        </small>
+                    </div>
+                    {% if item.ai_research.recommended_bet %}
+                    <span class="badge bg-primary">
+                        Recommandation: {{ item.ai_research.recommended_bet }}
+                    </span>
+                    {% endif %}
+                    <span class="badge {% if item.ai_research.risk_level == 'low' %}bg-success{% elseif item.ai_research.risk_level == 'medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                        Risque: {{ item.ai_research.risk_level }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ path('app_football_match_analysis', {id: item.match.id}) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-chart-line me-1"></i>Analyse complete
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

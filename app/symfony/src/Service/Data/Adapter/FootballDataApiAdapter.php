@@ -139,9 +139,26 @@ final class FootballDataApiAdapter implements MatchDataProviderInterface
             sport: 'football',
             statistics: $statistics,
             venue: $match['venue'] ?? null,
-            status: $match['status'] ?? 'SCHEDULED',
+            status: $this->mapStatus($match['status'] ?? 'SCHEDULED'),
             homeScore: $match['score']['fullTime']['home'] ?? null,
             awayScore: $match['score']['fullTime']['away'] ?? null,
         );
+    }
+
+    /**
+     * Map le statut Football-Data vers un format compatible avec l'enum MatchStatus.
+     */
+    private function mapStatus(string $status): string
+    {
+        return match ($status) {
+            'SCHEDULED', 'TIMED' => 'scheduled',
+            'IN_PLAY', 'LIVE' => 'live',
+            'PAUSED' => 'Halftime',
+            'FINISHED' => 'finished',
+            'POSTPONED' => 'postponed',
+            'SUSPENDED' => 'postponed',
+            'CANCELLED' => 'cancelled',
+            default => 'scheduled',
+        };
     }
 }

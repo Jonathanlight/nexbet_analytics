@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="{{ app.request.locale }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'auth.login'|trans }} - NexBet Analytics</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>🎯</text></svg>">
+
+    {% block stylesheets %}
+        <link href="{{ asset('/assets/styles/login.css') }}" rel="stylesheet">
+    {% endblock %}
+
+    {% block javascripts %}
+        {% block importmap %}
+            {{ importmap('app') }}
+        {% endblock %}
+    {% endblock %}
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-logo">🎯</div>
+                <h1>NexBet Analytics</h1>
+                <p class="subtitle">{{ 'auth.subtitle'|trans }}</p>
+            </div>
+
+            <div class="login_bloc" style="width: 30%;margin: auto;">
+                {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error.messageKey|trans(error.messageData, 'security') }}
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="inputEmail" class="form-label">{{ 'profile.email'|trans }}</label>
+                        <input type="email" value="{{ last_username }}" name="_username" id="inputEmail" class="form-control" autocomplete="email" required autofocus>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="inputPassword" class="form-label">{{ 'profile.password'|trans }}</label>
+                        <input type="password" name="_password" id="inputPassword" class="form-control" autocomplete="current-password" required>
+                    </div>
+
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="_remember_me" class="form-check-input" id="remember_me">
+                        <label class="form-check-label" for="remember_me">
+                            {{ 'auth.remember_me'|trans }}
+                        </label>
+                    </div>
+
+                    <button class="btn btn-primary w-100 btn-login" type="submit">
+                        {{ 'auth.login'|trans }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -260,6 +260,13 @@ php bin/phpunit --coverage-html var/coverage
 - Pariez de manière responsable
 - Ne misez que ce que vous pouvez vous permettre de perdre
 - Les probabilités ne garantissent pas les résultats
+    - https://the-odds-api.com/
+    - https://www.football-data.org/
+    - https://www.api-football.com/
+    - https://openweathermap.org/
+
+    admin@nexbet.com
+    password
 
 ## 📝 Licence
 

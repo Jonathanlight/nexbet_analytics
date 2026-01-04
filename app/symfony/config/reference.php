@@ -1511,6 +1511,274 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     generate_final_classes?: bool|Param, // Default: true
  *     generate_final_entities?: bool|Param, // Default: false
  * }
+ * @psalm-type SncRedisConfig = array{
+ *     class?: array{
+ *         client?: scalar|null|Param, // Default: "Predis\\Client"
+ *         client_options?: scalar|null|Param, // Default: "Predis\\Configuration\\Options"
+ *         connection_parameters?: scalar|null|Param, // Default: "Predis\\Connection\\Parameters"
+ *         connection_factory?: scalar|null|Param, // Default: "Snc\\RedisBundle\\Client\\Predis\\Connection\\ConnectionFactory"
+ *         connection_wrapper?: scalar|null|Param, // Default: "Snc\\RedisBundle\\Client\\Predis\\Connection\\ConnectionWrapper"
+ *         phpredis_client?: scalar|null|Param, // Default: "Redis"
+ *         relay_client?: scalar|null|Param, // Default: "Relay\\Relay"
+ *         phpredis_clusterclient?: scalar|null|Param, // Default: "RedisCluster"
+ *         logger?: scalar|null|Param, // Default: "Snc\\RedisBundle\\Logger\\RedisLogger"
+ *         data_collector?: scalar|null|Param, // Default: "Snc\\RedisBundle\\DataCollector\\RedisDataCollector"
+ *         monolog_handler?: scalar|null|Param, // Default: "Monolog\\Handler\\RedisHandler"
+ *     },
+ *     clients?: array<string, array{ // Default: []
+ *         type: scalar|null|Param,
+ *         alias: scalar|null|Param,
+ *         logging?: bool|Param, // Default: true
+ *         dsns: list<mixed>,
+ *         options?: array{
+ *             commands?: array<string, scalar|null|Param>,
+ *             connection_async?: bool|Param, // Default: false
+ *             connection_persistent?: mixed, // Default: false
+ *             connection_timeout?: scalar|null|Param, // Default: 5
+ *             read_write_timeout?: scalar|null|Param, // Default: null
+ *             iterable_multibulk?: bool|Param, // Default: false
+ *             throw_errors?: bool|Param, // Default: true
+ *             serialization?: scalar|null|Param, // Default: "default"
+ *             cluster?: scalar|null|Param, // Default: null
+ *             prefix?: scalar|null|Param, // Default: null
+ *             replication?: true|"predis"|"sentinel"|Param,
+ *             service?: scalar|null|Param, // Default: null
+ *             slave_failover?: "none"|"error"|"distribute"|"distribute_slaves"|Param,
+ *             parameters?: array{
+ *                 database?: scalar|null|Param, // Default: null
+ *                 username?: scalar|null|Param, // Default: null
+ *                 password?: scalar|null|Param, // Default: null
+ *                 sentinel_username?: scalar|null|Param, // Default: null
+ *                 sentinel_password?: scalar|null|Param, // Default: null
+ *                 logging?: bool|Param, // Default: true
+ *                 ssl_context?: mixed, // Default: null
+ *             },
+ *         },
+ *     }>,
+ *     monolog?: array{
+ *         client: scalar|null|Param,
+ *         key: scalar|null|Param,
+ *         formatter?: scalar|null|Param,
+ *     },
+ * }
+ * @psalm-type FosElasticaConfig = array{
+ *     clients?: array<string, array{ // Default: []
+ *         connections?: list<array{ // Default: []
+ *             url?: scalar|null|Param,
+ *             username?: scalar|null|Param,
+ *             password?: scalar|null|Param,
+ *             host?: scalar|null|Param,
+ *             port?: scalar|null|Param,
+ *             proxy?: scalar|null|Param,
+ *             auth_type?: scalar|null|Param,
+ *             http_error_codes?: list<scalar|null|Param>,
+ *             aws_access_key_id?: scalar|null|Param,
+ *             aws_secret_access_key?: scalar|null|Param,
+ *             aws_region?: scalar|null|Param,
+ *             aws_session_token?: scalar|null|Param,
+ *             aws_credential_provider?: scalar|null|Param,
+ *             ssl?: bool|Param, // Default: false
+ *             logger?: scalar|null|Param, // Default: "fos_elastica.logger"
+ *             compression?: bool|Param, // Default: false
+ *             headers?: array<string, scalar|null|Param>,
+ *             curl?: array<string, scalar|null|Param>,
+ *             transport?: scalar|null|Param,
+ *             timeout?: scalar|null|Param,
+ *             connectTimeout?: scalar|null|Param,
+ *             retryOnConflict?: scalar|null|Param, // Default: 0
+ *             persistent?: bool|Param, // Default: true
+ *         }>,
+ *         timeout?: scalar|null|Param,
+ *         connectTimeout?: scalar|null|Param,
+ *         headers?: scalar|null|Param,
+ *         connectionStrategy?: scalar|null|Param, // Default: "Simple"
+ *     }>,
+ *     indexes?: array<string, array{ // Default: []
+ *         index_name?: scalar|null|Param, // Defaults to the name of the index, but can be modified if the index name is different in ElasticSearch
+ *         indexable_callback?: mixed,
+ *         use_alias?: bool|Param, // Default: false
+ *         client?: scalar|null|Param,
+ *         finder?: scalar|null|Param, // Default: false
+ *         persistence?: array{
+ *             driver?: scalar|null|Param, // Default: "orm"
+ *             model?: scalar|null|Param, // Default: null
+ *             repository?: scalar|null|Param,
+ *             identifier?: scalar|null|Param, // Default: "id"
+ *             provider?: array{
+ *                 batch_size?: scalar|null|Param, // Default: 100
+ *                 clear_object_manager?: scalar|null|Param, // Default: true
+ *                 debug_logging?: bool|Param, // Default: true
+ *                 query_builder_method?: scalar|null|Param, // Default: "createQueryBuilder"
+ *                 locale?: scalar|null|Param,
+ *                 service?: scalar|null|Param,
+ *             },
+ *             listener?: bool|array{
+ *                 enabled?: bool|Param, // Default: true
+ *                 insert?: scalar|null|Param, // Default: true
+ *                 update?: scalar|null|Param, // Default: true
+ *                 delete?: scalar|null|Param, // Default: true
+ *                 flush?: scalar|null|Param, // Default: true
+ *                 defer?: bool|Param, // Default: false
+ *                 logger?: scalar|null|Param, // Default: false
+ *                 service?: scalar|null|Param,
+ *             },
+ *             finder?: array{
+ *                 service?: scalar|null|Param,
+ *             },
+ *             elastica_to_model_transformer?: array{
+ *                 hints?: list<array{ // Default: []
+ *                     name?: scalar|null|Param,
+ *                     value?: scalar|null|Param,
+ *                 }>,
+ *                 hydrate?: bool|Param, // Default: true
+ *                 ignore_missing?: bool|Param, // Silently ignore results returned from Elasticsearch without corresponding persistent object. // Default: false
+ *                 query_builder_method?: scalar|null|Param, // Default: "createQueryBuilder"
+ *                 service?: scalar|null|Param,
+ *             },
+ *             model_to_elastica_transformer?: array{
+ *                 service?: scalar|null|Param,
+ *             },
+ *             persister?: array{
+ *                 refresh?: "true"|"wait_for"|"false"|Param,
+ *                 service?: scalar|null|Param,
+ *             },
+ *         },
+ *         serializer?: array{
+ *             groups?: list<scalar|null|Param>,
+ *             version?: scalar|null|Param,
+ *             serialize_null?: bool|Param, // Default: false
+ *         },
+ *         index_prototype?: array{
+ *             analyzer?: scalar|null|Param,
+ *             persistence?: array{
+ *                 driver?: scalar|null|Param, // Default: "orm"
+ *                 model?: scalar|null|Param, // Default: null
+ *                 repository?: scalar|null|Param,
+ *                 identifier?: scalar|null|Param, // Default: "id"
+ *                 provider?: array{
+ *                     batch_size?: scalar|null|Param, // Default: 100
+ *                     clear_object_manager?: scalar|null|Param, // Default: true
+ *                     debug_logging?: bool|Param, // Default: true
+ *                     query_builder_method?: scalar|null|Param, // Default: "createQueryBuilder"
+ *                     locale?: scalar|null|Param,
+ *                     service?: scalar|null|Param,
+ *                 },
+ *                 listener?: bool|array{
+ *                     enabled?: bool|Param, // Default: true
+ *                     insert?: scalar|null|Param, // Default: true
+ *                     update?: scalar|null|Param, // Default: true
+ *                     delete?: scalar|null|Param, // Default: true
+ *                     flush?: scalar|null|Param, // Default: true
+ *                     defer?: bool|Param, // Default: false
+ *                     logger?: scalar|null|Param, // Default: false
+ *                     service?: scalar|null|Param,
+ *                 },
+ *                 finder?: array{
+ *                     service?: scalar|null|Param,
+ *                 },
+ *                 elastica_to_model_transformer?: array{
+ *                     hints?: list<array{ // Default: []
+ *                         name?: scalar|null|Param,
+ *                         value?: scalar|null|Param,
+ *                     }>,
+ *                     hydrate?: bool|Param, // Default: true
+ *                     ignore_missing?: bool|Param, // Silently ignore results returned from Elasticsearch without corresponding persistent object. // Default: false
+ *                     query_builder_method?: scalar|null|Param, // Default: "createQueryBuilder"
+ *                     service?: scalar|null|Param,
+ *                 },
+ *                 model_to_elastica_transformer?: array{
+ *                     service?: scalar|null|Param,
+ *                 },
+ *                 persister?: array{
+ *                     refresh?: "true"|"wait_for"|"false"|Param,
+ *                     service?: scalar|null|Param,
+ *                 },
+ *             },
+ *             serializer?: array{
+ *                 groups?: list<scalar|null|Param>,
+ *                 version?: scalar|null|Param,
+ *                 serialize_null?: bool|Param, // Default: false
+ *             },
+ *         },
+ *         settings?: mixed, // Default: []
+ *         date_detection?: bool|Param,
+ *         dynamic_date_formats?: list<scalar|null|Param>,
+ *         analyzer?: scalar|null|Param,
+ *         numeric_detection?: bool|Param,
+ *         dynamic?: scalar|null|Param,
+ *         _id?: array{
+ *             path?: scalar|null|Param,
+ *         },
+ *         properties?: array<string, mixed>,
+ *         dynamic_templates?: list<list<array{ // Default: []
+ *                 match?: scalar|null|Param,
+ *                 unmatch?: scalar|null|Param,
+ *                 match_mapping_type?: scalar|null|Param,
+ *                 path_match?: scalar|null|Param,
+ *                 path_unmatch?: scalar|null|Param,
+ *                 match_pattern?: scalar|null|Param,
+ *                 mapping?: list<mixed>,
+ *             }>>,
+ *         _source?: array{
+ *             excludes?: array<string, scalar|null|Param>,
+ *             includes?: array<string, scalar|null|Param>,
+ *             compress?: scalar|null|Param,
+ *             compress_threshold?: scalar|null|Param,
+ *             enabled?: scalar|null|Param, // Default: true
+ *         },
+ *         _routing?: array{
+ *             required?: scalar|null|Param,
+ *             path?: scalar|null|Param,
+ *         },
+ *     }>,
+ *     index_templates?: array<string, null|array{ // Default: []
+ *         template_name?: scalar|null|Param, // Defaults to the name of the index template, but can be modified if the index name is different in ElasticSearch
+ *         template?: scalar|null|Param,
+ *         index_patterns?: list<scalar|null|Param>,
+ *         client?: scalar|null|Param,
+ *         settings?: mixed, // Default: []
+ *         date_detection?: bool|Param,
+ *         dynamic_date_formats?: list<scalar|null|Param>,
+ *         analyzer?: scalar|null|Param,
+ *         numeric_detection?: bool|Param,
+ *         dynamic?: scalar|null|Param,
+ *         _id?: array{
+ *             path?: scalar|null|Param,
+ *         },
+ *         properties?: array<string, mixed>,
+ *         dynamic_templates?: list<list<array{ // Default: []
+ *                 match?: scalar|null|Param,
+ *                 unmatch?: scalar|null|Param,
+ *                 match_mapping_type?: scalar|null|Param,
+ *                 path_match?: scalar|null|Param,
+ *                 path_unmatch?: scalar|null|Param,
+ *                 match_pattern?: scalar|null|Param,
+ *                 mapping?: list<mixed>,
+ *             }>>,
+ *         _source?: array{
+ *             excludes?: array<string, scalar|null|Param>,
+ *             includes?: array<string, scalar|null|Param>,
+ *             compress?: scalar|null|Param,
+ *             compress_threshold?: scalar|null|Param,
+ *             enabled?: scalar|null|Param, // Default: true
+ *         },
+ *         _routing?: array{
+ *             required?: scalar|null|Param,
+ *             path?: scalar|null|Param,
+ *         },
+ *     }>,
+ *     default_client?: scalar|null|Param, // Defaults to the first client defined
+ *     default_index?: scalar|null|Param, // Defaults to the first index defined
+ *     default_manager?: scalar|null|Param, // Default: "orm"
+ *     messenger?: bool|array{
+ *         enabled?: bool|Param, // Default: false
+ *         bus?: scalar|null|Param, // Default: "messenger.default_bus"
+ *     },
+ *     serializer?: array{
+ *         callback_class?: scalar|null|Param, // Default: "FOS\\ElasticaBundle\\Serializer\\Callback"
+ *         serializer?: scalar|null|Param, // Default: "serializer"
+ *     },
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1524,6 +1792,8 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     twig_extra?: TwigExtraConfig,
  *     security?: SecurityConfig,
  *     monolog?: MonologConfig,
+ *     snc_redis?: SncRedisConfig,
+ *     fos_elastica?: FosElasticaConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1540,6 +1810,8 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         security?: SecurityConfig,
  *         monolog?: MonologConfig,
  *         maker?: MakerConfig,
+ *         snc_redis?: SncRedisConfig,
+ *         fos_elastica?: FosElasticaConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1554,6 +1826,8 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig_extra?: TwigExtraConfig,
  *         security?: SecurityConfig,
  *         monolog?: MonologConfig,
+ *         snc_redis?: SncRedisConfig,
+ *         fos_elastica?: FosElasticaConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1569,6 +1843,8 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig_extra?: TwigExtraConfig,
  *         security?: SecurityConfig,
  *         monolog?: MonologConfig,
+ *         snc_redis?: SncRedisConfig,
+ *         fos_elastica?: FosElasticaConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

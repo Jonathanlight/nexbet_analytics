@@ -1,74 +1,278 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Prédictions Football Aujourd'hui - NexBet Analytics{% endblock %}
+{% block title %}{{ 'football.predictions_today'|trans }} - NexBet Analytics{% endblock %}
 
 {% block body %}
-<div class="row mb-4">
-    <div class="col">
-        <h1 class="h2 mb-3">⚽ Prédictions Football du Jour</h1>
-        <p class="text-muted">Matchs de football avec analyses et prédictions IA</p>
-    </div>
-</div>
-
-{% if predictions is empty %}
-<div class="alert alert-info">
-    <h4 class="alert-heading">Aucun match aujourd'hui</h4>
-    <p class="mb-0">Il n'y a pas de matchs de football programmés pour aujourd'hui. Revenez plus tard !</p>
-</div>
-{% else %}
-<div class="row">
-    {% for prediction in predictions %}
-    <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <strong>{{ prediction.match.league }}</strong>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h2 mb-1">
+                    <i class="fas fa-futbol text-primary me-2"></i>
+                    {{ 'football.predictions_today'|trans }}
+                </h1>
+                <p class="text-muted mb-0">{{ 'football.predictions_description'|trans }} - Tries par score de securite</p>
             </div>
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <h5 class="mb-2">{{ prediction.match.homeTeam.name }}</h5>
-                    <span class="badge bg-secondary">VS</span>
-                    <h5 class="mt-2">{{ prediction.match.awayTeam.name }}</h5>
+            <div class="btn-group">
+                <a href="{{ path('app_football_predictions_today', {sort: 'confidence'}) }}"
+                   class="btn {% if current_sort|default('confidence') == 'confidence' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-shield-alt me-1"></i>Securite
+                </a>
+                <a href="{{ path('app_football_predictions_today', {sort: 'time'}) }}"
+                   class="btn {% if current_sort|default('confidence') == 'time' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-clock me-1"></i>Heure
+                </a>
+                <a href="{{ path('app_football_predictions_today', {sort: 'league'}) }}"
+                   class="btn {% if current_sort|default('confidence') == 'league' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-trophy me-1"></i>Championnat
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if summary is defined %}
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.total_matches }}</h4>
+                    <small>Matchs</small>
                 </div>
-                
-                <div class="mb-3">
-                    <small class="text-muted">📅 {{ prediction.match.matchDate|date('d/m/Y H:i') }}</small>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.high_confidence }}</h4>
+                    <small>Haute conf.</small>
                 </div>
-
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Domicile</span>
-                        <strong>{{ prediction.result.probabilities['1']|number_format(1) }}%</strong>
-                    </div>
-                    <div class="progress mb-2">
-                        <div class="progress-bar bg-success" style="width: {{ prediction.result.probabilities['1'] }}%"></div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Match nul</span>
-                        <strong>{{ prediction.result.probabilities['X']|number_format(1) }}%</strong>
-                    </div>
-                    <div class="progress mb-2">
-                        <div class="progress-bar bg-warning" style="width: {{ prediction.result.probabilities['X'] }}%"></div>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span>Extérieur</span>
-                        <strong>{{ prediction.result.probabilities['2']|number_format(1) }}%</strong>
-                    </div>
-                    <div class="progress">
-                        <div class="progress-bar bg-info" style="width: {{ prediction.result.probabilities['2'] }}%"></div>
-                    </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.with_ai_analysis }}</h4>
+                    <small>Analyse IA</small>
                 </div>
-
-                <div class="text-center">
-                    <a href="{{ path('app_football_match_analysis', {id: prediction.match.id}) }}" class="btn btn-primary btn-sm">
-                        Analyse complète
-                    </a>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.by_outcome['1'] ?? 0 }}</h4>
+                    <small>Domicile</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.by_outcome['X'] ?? 0 }}</h4>
+                    <small>Nuls</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.avg_safe_score|number_format(0) }}%</h4>
+                    <small>Score moy.</small>
                 </div>
             </div>
         </div>
     </div>
-    {% endfor %}
+    {% endif %}
+
+    {% if predictions is empty %}
+    <div class="alert alert-info">
+        <h4 class="alert-heading"><i class="fas fa-info-circle me-2"></i>{{ 'message.no_matches_today'|trans }}</h4>
+        <p class="mb-0">{{ 'message.no_matches_scheduled'|trans }}</p>
+    </div>
+    {% else %}
+    <div class="row">
+        {% for item in predictions %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 {% if item.safe_score >= 80 %}border-success border-2{% elseif item.safe_score >= 60 %}border-warning border-2{% endif %}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-secondary">{{ item.match.league }}</span>
+                        <small class="text-muted ms-2">{{ item.match.matchDate|date('H:i') }}</small>
+                    </div>
+                    <span class="badge {% if item.safe_score >= 80 %}bg-success{% elseif item.safe_score >= 60 %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                        <i class="fas fa-shield-alt me-1"></i>{{ item.safe_score|number_format(0) }}%
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h5 class="mb-1">{{ item.match.homeTeam.name }}</h5>
+                        <span class="badge bg-dark">VS</span>
+                        <h5 class="mt-1 mb-0">{{ item.match.awayTeam.name }}</h5>
+                    </div>
+
+                    <div class="row mb-3 text-center">
+                        <div class="col-4">
+                            <div class="{% if item.prediction.prediction == '1' %}bg-success text-white{% else %}bg-light{% endif %} rounded py-2">
+                                <strong>1</strong><br>
+                                <span class="fs-5">{{ item.prediction.probabilities['1']|number_format(1) }}%</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="{% if item.prediction.prediction == 'X' %}bg-success text-white{% else %}bg-light{% endif %} rounded py-2">
+                                <strong>X</strong><br>
+                                <span class="fs-5">{{ item.prediction.probabilities['X']|number_format(1) }}%</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="{% if item.prediction.prediction == '2' %}bg-success text-white{% else %}bg-light{% endif %} rounded py-2">
+                                <strong>2</strong><br>
+                                <span class="fs-5">{{ item.prediction.probabilities['2']|number_format(1) }}%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Confiance</small>
+                            <small><strong>{{ item.prediction.confidence|number_format(1) }}%</strong></small>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {% if item.prediction.confidence >= 80 %}bg-success{% elseif item.prediction.confidence >= 60 %}bg-warning{% else %}bg-danger{% endif %}"
+                                 style="width: {{ item.prediction.confidence }}%"></div>
+                        </div>
+                    </div>
+
+                    {% if item.ai_research is defined and item.ai_research.has_ai_analysis %}
+                    <div class="alert alert-info py-2 mb-2">
+                        <small>
+                            <i class="fas fa-robot me-1"></i>
+                            {{ item.ai_research.analysis_summary|default('Analyse en cours...') }}
+                        </small>
+                    </div>
+                    <div class="d-flex gap-1 mb-2">
+                        {% if item.ai_research.recommended_bet %}
+                        <span class="badge bg-primary">Reco: {{ item.ai_research.recommended_bet }}</span>
+                        {% endif %}
+                        <span class="badge {% if item.ai_research.risk_level == 'low' %}bg-success{% elseif item.ai_research.risk_level == 'medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            Risque: {{ item.ai_research.risk_level }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if item.goals_prediction is defined %}
+                    <div class="d-flex justify-content-between small text-muted mb-2">
+                        <span>O/U 2.5:</span>
+                        <span>
+                            <span class="badge bg-light text-dark">+{{ item.goals_prediction['over_2.5']|default(50)|number_format(0) }}%</span>
+                            <span class="badge bg-light text-dark">-{{ item.goals_prediction['under_2.5']|default(50)|number_format(0) }}%</span>
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{{ path('app_football_match_analysis', {id: item.match.id}) }}" class="btn btn-primary btn-sm w-100">
+                        <i class="fas fa-chart-line me-1"></i>{{ 'action.full_analysis'|trans }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{{ path('app_football_safest_bets') }}" class="btn btn-success me-2">
+                <i class="fas fa-shield-alt me-1"></i>Paris les plus surs
+            </a>
+            <a href="{{ path('app_football_upcoming') }}" class="btn btn-primary">
+                <i class="fas fa-calendar me-1"></i>Tous les matchs a venir
+            </a>
+        </div>
+    </div>
+
+    {# Section des matchs termines recents avec verification des predictions #}
+    {% if recent_finished_matches is defined and recent_finished_matches|length > 0 %}
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Historique des Predictions
+                    </h5>
+                    <a href="{{ path('app_football_daily') }}" class="btn btn-sm btn-outline-light">
+                        Voir tout <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+
+                {# Statistiques de precision #}
+                {% if accuracy_stats is defined and accuracy_stats.total_finished > 0 %}
+                <div class="card-body border-bottom">
+                    <div class="row text-center">
+                        <div class="col-md-6 mb-2 mb-md-0">
+                            <div class="h4 mb-0 {% if accuracy_stats.accuracy_rate >= 60 %}text-success{% elseif accuracy_stats.accuracy_rate >= 45 %}text-warning{% else %}text-danger{% endif %}">
+                                {{ accuracy_stats.accuracy_rate }}%
+                            </div>
+                            <small class="text-muted">Precision des Predictions</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="h4 mb-0 text-primary">{{ accuracy_stats.total_finished }}</div>
+                            <small class="text-muted">Matchs Analyses</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Match</th>
+                                    <th class="text-center">Score Final</th>
+                                    <th class="text-center">Notre Prediction</th>
+                                    <th class="text-center">Resultat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for data in recent_finished_matches %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('app_football_match_analysis', {id: data.match.id}) }}" class="text-decoration-none">
+                                            <strong>{{ data.match.homeTeam.name }}</strong>
+                                            <span class="text-muted">vs</span>
+                                            <strong>{{ data.match.awayTeam.name }}</strong>
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">{{ data.match.league }} - {{ data.match.matchDate|date('d/m H:i') }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-dark fs-6">{{ data.home_score }} - {{ data.away_score }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge {% if data.predicted_result == '1' %}bg-primary{% elseif data.predicted_result == 'X' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                            {% if data.predicted_result == '1' %}Domicile
+                                            {% elseif data.predicted_result == 'X' %}Nul
+                                            {% else %}Exterieur{% endif %}
+                                        </span>
+                                        <br>
+                                        <small class="text-muted">{{ data.predicted_probability|number_format(0) }}%</small>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if data.prediction_correct %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Correct</span>
+                                        {% else %}
+                                            <span class="badge bg-danger"><i class="fas fa-times"></i> Incorrect</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}

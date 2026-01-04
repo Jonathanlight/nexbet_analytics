@@ -9,16 +9,26 @@
          failOnWarning="true"
          bootstrap="tests/bootstrap.php"
          cacheDirectory=".phpunit.cache"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         displayDetailsOnTestsThatTriggerDeprecations="true"
 >
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
+        <ini name="memory_limit" value="256M" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+        <server name="KERNEL_CLASS" value="App\Kernel" />
+        <!-- Redis test config -->
+        <server name="REDIS_HOST" value="localhost" />
+        <server name="REDIS_PORT" value="6379" />
+        <!-- Elasticsearch test config -->
+        <server name="ELASTICSEARCH_HOST" value="localhost" />
+        <server name="ELASTICSEARCH_PORT" value="9200" />
     </php>
 
     <testsuites>
-        <testsuite name="Project Test Suite">
+        <testsuite name="All">
             <directory>tests</directory>
         </testsuite>
     </testsuites>
@@ -31,6 +41,10 @@
         <include>
             <directory>src</directory>
         </include>
+        <exclude>
+            <directory>src/Entity</directory>
+            <directory>src/Kernel.php</directory>
+        </exclude>
 
         <deprecationTrigger>
             <method>Doctrine\Deprecations\Deprecation::trigger</method>
@@ -38,6 +52,14 @@
             <function>trigger_deprecation</function>
         </deprecationTrigger>
     </source>
+
+    <coverage>
+        <report>
+            <html outputDirectory=".phpunit.cache/coverage-html"/>
+            <text outputFile=".phpunit.cache/coverage.txt"/>
+            <clover outputFile=".phpunit.cache/coverage.xml"/>
+        </report>
+    </coverage>
 
     <extensions>
     </extensions>

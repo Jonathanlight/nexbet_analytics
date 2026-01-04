@@ -2,7 +2,14 @@ parameters:
     env(THE_ODDS_API_KEY): ''
     env(FOOTBALL_DATA_API_KEY): ''
     env(API_FOOTBALL_KEY): ''
+    env(API_BASKETBALL_KEY): ''
+    env(API_HOCKEY_KEY): ''
     env(OPENWEATHER_API_KEY): ''
+    env(ANTHROPIC_API_KEY): ''
+    env(REDIS_HOST): 'localhost'
+    env(REDIS_PORT): '6379'
+    env(ELASTICSEARCH_HOST): 'localhost'
+    env(ELASTICSEARCH_PORT): '9200'
 
 services:
     _defaults:
@@ -15,6 +22,8 @@ services:
     # Cache Service
     App\Service\Data\Interface\CacheInterface:
         class: App\Service\Data\Cache\FileCacheService
+        arguments:
+            $cacheDir: '%kernel.cache_dir%/nexbet'
 
     # Rate Limiter Service
     App\Service\Data\Interface\RateLimiterInterface:
@@ -35,10 +44,24 @@ services:
         arguments:
             $apiKey: '%env(API_FOOTBALL_KEY)%'
 
+    # API-Basketball Adapter (API-Sports - meme quota que football)
+    App\Service\Data\Adapter\ApiBasketballAdapter:
+        arguments:
+            $apiKey: '%env(API_BASKETBALL_KEY)%'
+
+    # API-Hockey Adapter (API-Sports - meme quota que football)
+    App\Service\Data\Adapter\ApiHockeyAdapter:
+        arguments:
+            $apiKey: '%env(API_HOCKEY_KEY)%'
+
     # OpenWeatherMap API Adapter (1000 req/jour)
     App\Service\Data\Adapter\OpenWeatherApiAdapter:
         arguments:
             $apiKey: '%env(OPENWEATHER_API_KEY)%'
+
+    # Unibet Adapter (pas de rate limit - scraping direct)
+    App\Service\Data\Adapter\UnibetAdapter:
+        # Pas de clé API requise - utilise l'API publique Kambi
 
     # Rate Limiters avec configurations spécifiques
     App\Service\Data\RateLimiter\SimpleRateLimiter:
@@ -65,10 +88,81 @@ services:
             $maxRequests: 100
             $windowSeconds: 86400  # 1 jour
 
+    # Rate Limiter pour API-Basketball (partage le quota API-Sports)
+    api_basketball.rate_limiter:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+        arguments:
+            $maxRequests: 100
+            $windowSeconds: 86400  # 1 jour
+
+    # Rate Limiter pour API-Hockey (partage le quota API-Sports)
+    api_hockey.rate_limiter:
+        class: App\Service\Data\RateLimiter\SimpleRateLimiter
+        arguments:
+            $maxRequests: 100
+            $windowSeconds: 86400  # 1 jour
+
     # Rate Limiter pour OpenWeather (1000/jour)
     openweather_api.rate_limiter:
         class: App\Service\Data\RateLimiter\SimpleRateLimiter
         arguments:
             $maxRequests: 1000
             $windowSeconds: 86400  # 1 jour
+
+    # LiveScoreScraper - Fournisseur de données live via APIs
+    App\Service\Data\Interface\LiveDataProviderInterface:
+        class: App\Service\Data\LivescoreScraper
+
+    # WhoscoredScraper - Fournisseur de statistiques détaillées via APIs
+    App\Service\Data\Interface\MatchStatisticsProviderInterface:
+        class: App\Service\Data\WhoscoredScraper
+
+    # AI Match Research Service (Claude API)
+    App\Service\AI\MatchResearchService:
+        arguments:
+            $anthropicApiKey: '%env(ANTHROPIC_API_KEY)%'
+
+    # AI Sports News Service (Claude API for news analysis)
+    App\Service\AI\SportsNewsService:
+        arguments:
+            $anthropicApiKey: '%env(ANTHROPIC_API_KEY)%'
+
+    # AI Prediction Learning Service (automatic model adjustment)
+    App\Service\AI\PredictionLearningService:
+        # No special config needed - uses autowiring
+
+    # Ultra Prediction Service (combines all prediction models)
+    App\Service\Prediction\UltraPredictionService:
+        # No special config needed - uses autowiring
+
+    # ===== REDIS CACHE SERVICE =====
+    App\Service\Cache\RedisCacheService:
+        arguments:
+            $host: '%env(REDIS_HOST)%'
+            $port: '%env(int:REDIS_PORT)%'
+            $prefix: 'nexbet:'
+
+    # Interface Redis pour injection de dépendance et mocking
+    App\Service\Cache\RedisCacheInterface:
+        alias: App\Service\Cache\RedisCacheService
+
+    # ===== ELASTICSEARCH SERVICE =====
+    App\Service\Search\ElasticsearchService:
+        arguments:
+            $host: '%env(ELASTICSEARCH_HOST)%'
+            $port: '%env(int:ELASTICSEARCH_PORT)%'
+
+    # Interface Elasticsearch pour injection de dépendance et mocking
+    App\Service\Search\ElasticsearchInterface:
+        alias: App\Service\Search\ElasticsearchService
+
+    # ===== MATH SERVICES INTERFACES =====
+    App\Service\Math\Interface\PoissonServiceInterface:
+        alias: App\Service\Math\PoissonService
+
+    App\Service\Math\Interface\MonteCarloInterface:
+        alias: App\Service\Math\MonteCarloSimulator
+
+    App\Service\Math\Interface\EloServiceInterface:
+        alias: App\Service\Math\EloService
 

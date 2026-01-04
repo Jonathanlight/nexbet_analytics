@@ -1,0 +1,165 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Matchs a venir - NexBet Analytics{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-0">
+                    <i class="fas fa-futbol text-primary me-2"></i>
+                    Matchs a venir
+                </h1>
+                <p class="text-muted mb-0">Tous les matchs tries par score de securite</p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ path('app_football_upcoming', {sort: 'confidence'}) }}"
+                   class="btn {% if current_sort == 'confidence' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-shield-alt me-1"></i>Securite
+                </a>
+                <a href="{{ path('app_football_upcoming', {sort: 'time'}) }}"
+                   class="btn {% if current_sort == 'time' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-clock me-1"></i>Heure
+                </a>
+                <a href="{{ path('app_football_upcoming', {sort: 'league'}) }}"
+                   class="btn {% if current_sort == 'league' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-trophy me-1"></i>Championnat
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if summary is defined %}
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.total_matches }}</h4>
+                    <small>Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.high_confidence }}</h4>
+                    <small>Haute conf.</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.by_outcome['1'] ?? 0 }}</h4>
+                    <small>Victoire Dom.</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.by_outcome['X'] ?? 0 }}</h4>
+                    <small>Nuls</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.by_outcome['2'] ?? 0 }}</h4>
+                    <small>Victoire Ext.</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body text-center py-2">
+                    <h4 class="mb-0">{{ summary.avg_safe_score|number_format(0) }}%</h4>
+                    <small>Score moy.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if predictions is empty %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Aucun match a venir pour le moment.
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th style="width: 80px;">Score</th>
+                    <th>Match</th>
+                    <th>Championnat</th>
+                    <th>Date/Heure</th>
+                    <th class="text-center">1</th>
+                    <th class="text-center">X</th>
+                    <th class="text-center">2</th>
+                    <th class="text-center">Prediction</th>
+                    <th class="text-center">IA</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in predictions %}
+                <tr class="{% if item.safe_score >= 80 %}table-success{% elseif item.safe_score >= 60 %}table-warning{% endif %}">
+                    <td>
+                        <span class="badge {% if item.safe_score >= 80 %}bg-success{% elseif item.safe_score >= 60 %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6">
+                            {{ item.safe_score|number_format(0) }}%
+                        </span>
+                    </td>
+                    <td>
+                        <strong>{{ item.match.homeTeam.name }}</strong>
+                        <span class="text-muted">vs</span>
+                        <strong>{{ item.match.awayTeam.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ item.match.league }}</span>
+                    </td>
+                    <td>
+                        <small>
+                            {{ item.match.matchDate|date('d/m') }}<br>
+                            <strong>{{ item.match.matchDate|date('H:i') }}</strong>
+                        </small>
+                    </td>
+                    <td class="text-center {% if item.prediction.prediction == '1' %}bg-success text-white{% endif %}">
+                        {{ item.prediction.probabilities['1']|number_format(1) }}%
+                    </td>
+                    <td class="text-center {% if item.prediction.prediction == 'X' %}bg-success text-white{% endif %}">
+                        {{ item.prediction.probabilities['X']|number_format(1) }}%
+                    </td>
+                    <td class="text-center {% if item.prediction.prediction == '2' %}bg-success text-white{% endif %}">
+                        {{ item.prediction.probabilities['2']|number_format(1) }}%
+                    </td>
+                    <td class="text-center">
+                        <span class="badge bg-primary fs-6">{{ item.prediction.prediction }}</span>
+                    </td>
+                    <td class="text-center">
+                        {% if item.ai_research.has_ai_analysis %}
+                        <span class="badge {% if item.ai_research.risk_level == 'low' %}bg-success{% elseif item.ai_research.risk_level == 'medium' %}bg-warning text-dark{% else %}bg-danger{% endif %}"
+                              title="{{ item.ai_research.analysis_summary }}">
+                            <i class="fas fa-robot"></i>
+                        </span>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ path('app_football_match_analysis', {id: item.match.id}) }}"
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-chart-line"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

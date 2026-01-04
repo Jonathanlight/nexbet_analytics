@@ -22,6 +22,18 @@
             "src/Repository/.gitignore"
         ]
     },
+    "doctrine/doctrine-fixtures-bundle": {
+        "version": "3.7",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "3.0",
+            "ref": "1f5514cfa15b947298df4d771e694e578d4c204d"
+        },
+        "files": [
+            "src/DataFixtures/AppFixtures.php"
+        ]
+    },
     "doctrine/doctrine-migrations-bundle": {
         "version": "3.7",
         "recipe": {
@@ -47,6 +59,15 @@
             ".php-cs-fixer.dist.php"
         ]
     },
+    "friendsofsymfony/elastica-bundle": {
+        "version": "6.6",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "5.0",
+            "ref": "46c9cd2c1e07f0fcfd97e96f12b03b2e0845c4cd"
+        }
+    },
     "phpstan/phpstan": {
         "version": "2.1",
         "recipe": {
@@ -70,6 +91,15 @@
             "tests/bootstrap.php",
             "bin/phpunit"
         ]
+    },
+    "snc/redis-bundle": {
+        "version": "4.10",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "2.0",
+            "ref": "36b3d9ab65be62de4e085a25e6ca899efa96b1f3"
+        }
     },
     "symfony/asset-mapper": {
         "version": "7.4",
@@ -342,5 +372,14 @@
     },
     "twig/extra-bundle": {
         "version": "v3.22.2"
+    },
+    "vincentlanglet/twig-cs-fixer": {
+        "version": "3.11",
+        "recipe": {
+            "repo": "github.com/symfony/recipes-contrib",
+            "branch": "main",
+            "version": "3.0",
+            "ref": "d42582ae1bce86fd43491d6264c738b0867f8ffe"
+        }
     }
 }

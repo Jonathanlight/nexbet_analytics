@@ -68,7 +68,7 @@ class CombinationBuilder
         $valueBets = array_filter($predictions, fn ($p) => ($p['is_value_bet'] ?? false) && $p['confidence'] >= 70
         );
 
-        usort($valueBets, fn ($a, $b) => $b['expected_value'] <=> $a['expected_value']);
+        usort($valueBets, fn ($a, $b) => ($b['expected_value'] ?? 0) <=> ($a['expected_value'] ?? 0));
 
         $combinations = [];
 
@@ -81,7 +81,7 @@ class CombinationBuilder
         }
 
         // Trier par EV
-        usort($combinations, fn ($a, $b) => $b['expected_value'] <=> $a['expected_value']);
+        usort($combinations, fn ($a, $b) => ($b['expected_value'] ?? 0) <=> ($a['expected_value'] ?? 0));
 
         return array_slice($combinations, 0, 10);
     }
