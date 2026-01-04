@@ -59,6 +59,11 @@ services:
         arguments:
             $apiKey: '%env(OPENWEATHER_API_KEY)%'
 
+    # Import League Data Command
+    App\Command\ImportLeagueDataCommand:
+        arguments:
+            $apiFootballKey: '%env(API_FOOTBALL_KEY)%'
+
     # Unibet Adapter (pas de rate limit - scraping direct)
     App\Service\Data\Adapter\UnibetAdapter:
         # Pas de clé API requise - utilise l'API publique Kambi

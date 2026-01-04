@@ -12,6 +12,7 @@ enum MatchStatus: string
     case HALFTIME = 'Halftime';
     case SECOND_HALF = 'Second Half';
     case LIVE = 'live';
+    case IN_PROGRESS = 'In Progress';
     case FINISHED = 'finished';
     case MATCH_FINISHED = 'Match Finished';
     case POSTPONED = 'postponed';
@@ -25,6 +26,7 @@ enum MatchStatus: string
             self::SECOND_HALF,
             self::HALFTIME,
             self::LIVE,
+            self::IN_PROGRESS,
         ], true);
     }
 
@@ -62,6 +64,7 @@ enum MatchStatus: string
             self::HALFTIME => 'Mi-temps',
             self::SECOND_HALF => 'Deuxième mi-temps',
             self::LIVE => 'En direct',
+            self::IN_PROGRESS => 'En cours',
             self::FINISHED => 'Terminé',
             self::MATCH_FINISHED => 'Match terminé',
             self::POSTPONED => 'Reporté',

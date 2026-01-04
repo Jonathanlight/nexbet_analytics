@@ -15,7 +15,7 @@ class EloService implements EloServiceInterface
 {
     private const DEFAULT_RATING = 1500;
     private const K_FACTOR = 40; // Facteur K - détermine la vitesse de changement
-    private const HOME_ADVANTAGE = 100; // Avantage du terrain
+    private const HOME_ADVANTAGE = 65; // Avantage du terrain RÉDUIT (était 100)
 
     /**
      * Calcule la probabilité de victoire selon le rating Elo.
@@ -30,20 +30,41 @@ class EloService implements EloServiceInterface
      */
     public function calculateResultProbabilities(Team $homeTeam, Team $awayTeam): array
     {
-        $homeRating = $homeTeam->getEloRating() ?? self::DEFAULT_RATING;
-        $awayRating = $awayTeam->getEloRating() ?? self::DEFAULT_RATING;
+        $homeRating = $homeTeam->getEloRating();
+        $awayRating = $awayTeam->getEloRating();
+
+        // Détecter si on a des ratings réels ou par défaut
+        $hasHomeRating = null !== $homeRating;
+        $hasAwayRating = null !== $awayRating;
+        $hasRealData = $hasHomeRating && $hasAwayRating;
+
+        $homeRating = $homeRating ?? self::DEFAULT_RATING;
+        $awayRating = $awayRating ?? self::DEFAULT_RATING;
+
+        // Réduire l'avantage domicile si on n'a pas de données réelles
+        // Car on ne peut pas être sûr de la force relative des équipes
+        $homeAdvantage = $hasRealData ? self::HOME_ADVANTAGE : (self::HOME_ADVANTAGE * 0.5);
 
         // Ajouter l'avantage du terrain
-        $adjustedHomeRating = $homeRating + self::HOME_ADVANTAGE;
+        $adjustedHomeRating = $homeRating + $homeAdvantage;
 
         // Calculer la probabilité de victoire à domicile
         $homeWinProb = $this->calculateWinProbability($adjustedHomeRating, $awayRating);
         $awayWinProb = 1 - $homeWinProb;
 
-        // Estimation du match nul (formule empirique)
+        // Estimation du match nul (formule empirique améliorée)
         $ratingDiff = abs($adjustedHomeRating - $awayRating);
-        $drawProb = 0.25 - ($ratingDiff / 2000); // Plus la différence est grande, moins le nul est probable
-        $drawProb = max(0.05, min(0.35, $drawProb)); // Entre 5% et 35%
+
+        // Base de nul plus élevée, surtout sans données
+        $baseDrawProb = $hasRealData ? 0.26 : 0.30;
+        $drawProb = $baseDrawProb - ($ratingDiff / 2500);
+
+        // Si les deux équipes ont le rating par défaut, le nul est plus probable
+        if (!$hasHomeRating && !$hasAwayRating) {
+            $drawProb = 0.32; // ~32% de nul quand on ne sait rien
+        }
+
+        $drawProb = max(0.08, min(0.38, $drawProb)); // Entre 8% et 38%
 
         // Ajuster les probabilités de victoire
         $homeWinProb = $homeWinProb * (1 - $drawProb);

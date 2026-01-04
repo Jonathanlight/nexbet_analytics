@@ -7,48 +7,187 @@ namespace App\Service\Prediction;
 /**
  * Service de calcul du niveau de confiance des prédictions.
  * Agrège les résultats de plusieurs algorithmes pour déterminer la fiabilité.
+ *
+ * IMPORTANT: La confiance mesure la FIABILITÉ de notre prédiction, pas la probabilité.
+ * Une confiance élevée = on est sûr de notre analyse (bonnes données, algos d'accord)
+ * Une probabilité élevée = l'événement est probable
  */
 class ConfidenceCalculator
 {
     /**
-     * Calcule le niveau de confiance global basé sur plusieurs algorithmes.
+     * Calcule le niveau de confiance global basé sur plusieurs facteurs.
+     *
+     * @param array $algorithmScores     Les scores max de chaque algorithme
+     * @param bool  $hasHistoricalData   Données historiques disponibles ?
+     * @param int   $matchesAnalyzed     Nombre de matchs analysés
+     * @param array $algorithmPredictions Les prédictions complètes (1/X/2) de chaque algo
      */
-    public function calculateOverallConfidence(array $algorithmScores): float
-    {
+    public function calculateOverallConfidence(
+        array $algorithmScores,
+        bool $hasHistoricalData = true,
+        int $matchesAnalyzed = 10,
+        array $algorithmPredictions = []
+    ): float {
         if (empty($algorithmScores)) {
             return 0.0;
         }
 
-        // Moyennes pondérées des différents algorithmes
-        $weights = [
-            'poisson' => 0.25,
-            'elo' => 0.20,
-            'xg' => 0.30,
-            'monte_carlo' => 0.25,
-        ];
+        // 1. SCORE DE BASE: Accord entre les algorithmes sur le MÊME résultat
+        $agreementScore = $this->calculateAlgorithmAgreement($algorithmPredictions);
 
-        $weightedSum = 0.0;
-        $totalWeight = 0.0;
+        // 2. SCORE DE DONNÉES: Qualité et quantité des données
+        $dataQualityScore = $this->calculateDataQualityScore($hasHistoricalData, $matchesAnalyzed);
 
-        foreach ($algorithmScores as $algorithm => $score) {
-            $weight = $weights[$algorithm] ?? 0.0;
-            $weightedSum += $score * $weight;
-            $totalWeight += $weight;
-        }
+        // 3. SCORE DE CERTITUDE: Écart entre le 1er et 2e choix
+        $certaintyScore = $this->calculateCertaintyScore($algorithmPredictions);
 
-        if (0 === $totalWeight) {
-            return 0.0;
-        }
-
-        $confidence = ($weightedSum / $totalWeight);
-
-        // Ajuster selon la variance entre les algorithmes
+        // 4. VARIANCE: Cohérence des probabilités entre algorithmes
         $variance = $this->calculateVariance($algorithmScores);
-        $consistencyBonus = $this->calculateConsistencyBonus($variance);
+        $consistencyScore = $this->calculateConsistencyScore($variance);
 
-        $finalConfidence = min(99.9, $confidence + $consistencyBonus);
+        // Combiner les scores avec des poids appropriés
+        $confidence = (
+            ($agreementScore * 0.35) +      // 35% - Les algos prédisent le même résultat
+            ($dataQualityScore * 0.30) +    // 30% - Qualité des données
+            ($certaintyScore * 0.20) +      // 20% - Clarté de la prédiction
+            ($consistencyScore * 0.15)      // 15% - Cohérence des probabilités
+        );
+
+        // Cap à 95% max - on ne peut jamais être sûr à 100% au football
+        $finalConfidence = min(95.0, max(10.0, $confidence));
 
         return round($finalConfidence, 2);
+    }
+
+    /**
+     * Vérifie si tous les algorithmes prédisent le même résultat.
+     */
+    private function calculateAlgorithmAgreement(array $algorithmPredictions): float
+    {
+        if (empty($algorithmPredictions)) {
+            return 50.0; // Pas de données = confiance moyenne
+        }
+
+        $predictedOutcomes = [];
+        foreach ($algorithmPredictions as $algo => $probs) {
+            if (null === $probs) {
+                continue;
+            }
+            $maxProb = max($probs);
+            $outcome = array_search($maxProb, $probs);
+            $predictedOutcomes[$algo] = $outcome;
+        }
+
+        if (empty($predictedOutcomes)) {
+            return 50.0;
+        }
+
+        // Compter combien d'algorithmes sont d'accord
+        $counts = array_count_values($predictedOutcomes);
+        $maxAgreement = max($counts);
+        $totalAlgos = count($predictedOutcomes);
+
+        // Score: 100 si tous d'accord, moins si désaccord
+        $agreementRatio = $maxAgreement / $totalAlgos;
+
+        if ($agreementRatio >= 1.0) {
+            return 95.0; // Tous d'accord
+        } elseif ($agreementRatio >= 0.75) {
+            return 80.0; // 3/4 d'accord
+        } elseif ($agreementRatio >= 0.5) {
+            return 60.0; // Moitié d'accord
+        }
+
+        return 40.0; // Désaccord total
+    }
+
+    /**
+     * Calcule un score basé sur la qualité des données.
+     */
+    private function calculateDataQualityScore(bool $hasHistoricalData, int $matchesAnalyzed): float
+    {
+        if (!$hasHistoricalData) {
+            return 25.0; // Pénalité sévère: pas de données = faible confiance
+        }
+
+        // Plus on a de matchs analysés, mieux c'est
+        if ($matchesAnalyzed >= 10) {
+            return 90.0;
+        } elseif ($matchesAnalyzed >= 7) {
+            return 75.0;
+        } elseif ($matchesAnalyzed >= 5) {
+            return 60.0;
+        } elseif ($matchesAnalyzed >= 3) {
+            return 45.0;
+        }
+
+        return 30.0;
+    }
+
+    /**
+     * Calcule la clarté de la prédiction (écart entre 1er et 2e choix).
+     */
+    private function calculateCertaintyScore(array $algorithmPredictions): float
+    {
+        if (empty($algorithmPredictions)) {
+            return 50.0;
+        }
+
+        // Calculer la moyenne des écarts entre 1er et 2e choix
+        $totalGap = 0.0;
+        $count = 0;
+
+        foreach ($algorithmPredictions as $probs) {
+            if (null === $probs) {
+                continue;
+            }
+            $sorted = $probs;
+            arsort($sorted);
+            $values = array_values($sorted);
+
+            if (count($values) >= 2) {
+                $gap = $values[0] - $values[1];
+                $totalGap += $gap;
+                ++$count;
+            }
+        }
+
+        if (0 === $count) {
+            return 50.0;
+        }
+
+        $avgGap = $totalGap / $count;
+
+        // Gap > 30% = très clair, Gap < 5% = très incertain
+        if ($avgGap >= 30) {
+            return 95.0;
+        } elseif ($avgGap >= 20) {
+            return 80.0;
+        } elseif ($avgGap >= 10) {
+            return 65.0;
+        } elseif ($avgGap >= 5) {
+            return 50.0;
+        }
+
+        return 35.0; // Très serré = incertain
+    }
+
+    /**
+     * Score de cohérence basé sur la variance.
+     */
+    private function calculateConsistencyScore(float $variance): float
+    {
+        if ($variance < 5) {
+            return 95.0; // Très cohérent
+        } elseif ($variance < 15) {
+            return 80.0;
+        } elseif ($variance < 30) {
+            return 60.0;
+        } elseif ($variance < 50) {
+            return 45.0;
+        }
+
+        return 30.0; // Très incohérent
     }
 
     /**
@@ -68,23 +207,6 @@ class ConfidenceCalculator
         }
 
         return $variance / count($scores);
-    }
-
-    /**
-     * Calcule un bonus de consistance basé sur la variance.
-     * Si tous les algorithmes sont d'accord, augmente la confiance.
-     */
-    private function calculateConsistencyBonus(float $variance): float
-    {
-        if ($variance < 10) {
-            return 10.0; // Très forte cohérence
-        } elseif ($variance < 25) {
-            return 5.0; // Bonne cohérence
-        } elseif ($variance < 50) {
-            return 2.0; // Cohérence moyenne
-        }
-
-        return 0.0; // Faible cohérence
     }
 
     /**
@@ -132,7 +254,7 @@ class ConfidenceCalculator
     public function calculateBetTypeConfidence(
         string $betType,
         float $generalConfidence,
-        array $specificFactors = [],
+        array $specificFactors = []
     ): float {
         // Ajustements selon le type de pari
         $adjustments = [

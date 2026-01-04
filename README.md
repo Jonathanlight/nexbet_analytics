@@ -50,7 +50,7 @@ printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltNam
 
 ### Configuration
 ---
-
+git rm --cached app/symfony/.env
 ### Pipeline
 ---
 

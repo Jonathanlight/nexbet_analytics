@@ -38,6 +38,10 @@ class ResultPredictionService
         $homeStats = $this->matchRepository->getTeamAverageStats($homeTeam, 10);
         $awayStats = $this->matchRepository->getTeamAverageStats($awayTeam, 10);
 
+        // Détecter le type de compétition pour ajuster les prédictions
+        $competitionType = $this->detectCompetitionType($match);
+        $competitionMultiplier = $this->getCompetitionConfidenceMultiplier($competitionType);
+
         // Utiliser les cotes du bookmaker si disponibles pour ajuster les expected goals
         $oddsPrediction = $this->calculateProbabilitiesFromOdds($match);
         $hasOdds = null !== $oddsPrediction;
@@ -46,7 +50,11 @@ class ResultPredictionService
         $homeExpectedGoals = $homeStats['avg_goals_scored'];
         $awayExpectedGoals = $awayStats['avg_goals_scored'];
 
-        if ($hasOdds && !$homeStats['has_historical_data']) {
+        // Déterminer si on a des données fiables
+        $hasHistoricalData = $homeStats['has_historical_data'] && $awayStats['has_historical_data'];
+        $matchesAnalyzed = min($homeStats['matches_played'], $awayStats['matches_played']);
+
+        if ($hasOdds && !$hasHistoricalData) {
             // Utiliser les cotes pour estimer les expected goals
             $homeWinProb = $oddsPrediction['1'] / 100;
             $awayWinProb = $oddsPrediction['2'] / 100;
@@ -65,8 +73,12 @@ class ResultPredictionService
             $awayExpectedGoals
         );
 
-        // 2. Prédiction Elo
+        // 2. Prédiction Elo (avec ajustement pour matchs amicaux)
         $eloPrediction = $this->eloService->calculateResultProbabilities($homeTeam, $awayTeam);
+        if ('friendly' === $competitionType) {
+            // Réduire l'avantage domicile pour les matchs amicaux
+            $eloPrediction = $this->reduceHomeAdvantage($eloPrediction);
+        }
 
         // 3. Prédiction xG
         $homeXG = $homeStats['avg_xg'] ?? $homeExpectedGoals;
@@ -95,10 +107,13 @@ class ResultPredictionService
             $predictionsToAggregate['bookmaker'] = $oddsPrediction;
         }
 
-        // Agréger les résultats
-        $aggregatedPrediction = $this->aggregatePredictions($predictionsToAggregate);
+        // Agréger les résultats avec ajustement pour matchs serrés
+        $aggregatedPrediction = $this->aggregatePredictions($predictionsToAggregate, $hasHistoricalData);
 
-        // Calculer la confiance
+        // Ajuster pour les matchs très serrés (augmenter probabilité de nul)
+        $aggregatedPrediction = $this->adjustForCloseMatches($aggregatedPrediction, $hasHistoricalData);
+
+        // Calculer la confiance RÉELLE (pas la probabilité!)
         $algorithmScores = [
             'poisson' => max($poissonPrediction['1'], $poissonPrediction['X'], $poissonPrediction['2']),
             'elo' => max($eloPrediction['1'], $eloPrediction['X'], $eloPrediction['2']),
@@ -110,7 +125,17 @@ class ResultPredictionService
             $algorithmScores['bookmaker'] = max($oddsPrediction['1'], $oddsPrediction['X'], $oddsPrediction['2']);
         }
 
-        $confidence = $this->confidenceCalculator->calculateOverallConfidence($algorithmScores);
+        // Nouveau calcul de confiance avec tous les facteurs
+        $confidence = $this->confidenceCalculator->calculateOverallConfidence(
+            $algorithmScores,
+            $hasHistoricalData,
+            $matchesAnalyzed,
+            $predictionsToAggregate
+        );
+
+        // Appliquer le multiplicateur de compétition
+        $confidence = round($confidence * $competitionMultiplier, 2);
+        $confidence = min(95.0, max(10.0, $confidence));
 
         // Déterminer le résultat le plus probable
         $mostProbable = $this->determineMostProbableOutcome($aggregatedPrediction);
@@ -131,8 +156,122 @@ class ResultPredictionService
                 'home' => round($homeExpectedGoals, 2),
                 'away' => round($awayExpectedGoals, 2),
             ],
-            'has_historical_data' => $homeStats['has_historical_data'] && $awayStats['has_historical_data'],
+            'has_historical_data' => $hasHistoricalData,
+            'matches_analyzed' => $matchesAnalyzed,
+            'competition_type' => $competitionType,
+            'data_quality' => $this->calculateDataQuality($hasHistoricalData, $matchesAnalyzed, $hasOdds),
         ];
+    }
+
+    /**
+     * Détecte le type de compétition à partir du match.
+     */
+    private function detectCompetitionType(FootballMatch $match): string
+    {
+        $league = strtolower($match->getLeague() ?? '');
+
+        // Matchs amicaux
+        if (str_contains($league, 'friendly') || str_contains($league, 'friendlies') || str_contains($league, 'amical')) {
+            return 'friendly';
+        }
+
+        // Matchs de jeunes
+        if (str_contains($league, 'u20') || str_contains($league, 'u21') || str_contains($league, 'u19')
+            || str_contains($league, 'youth') || str_contains($league, 'junior')) {
+            return 'youth';
+        }
+
+        // Coupes (plus imprévisibles)
+        if (str_contains($league, 'cup') || str_contains($league, 'copa') || str_contains($league, 'coupe')) {
+            return 'cup';
+        }
+
+        return 'league';
+    }
+
+    /**
+     * Retourne un multiplicateur de confiance selon le type de compétition.
+     */
+    private function getCompetitionConfidenceMultiplier(string $competitionType): float
+    {
+        return match ($competitionType) {
+            'friendly' => 0.70,  // -30% confiance pour les amicaux
+            'youth' => 0.75,     // -25% confiance pour les matchs jeunes
+            'cup' => 0.90,       // -10% confiance pour les coupes
+            default => 1.0,      // Ligues normales
+        };
+    }
+
+    /**
+     * Réduit l'avantage domicile pour les matchs amicaux.
+     */
+    private function reduceHomeAdvantage(array $prediction): array
+    {
+        // Transférer 5% du domicile vers le nul et l'extérieur
+        $homeReduction = min(5.0, $prediction['1'] * 0.15);
+
+        return [
+            '1' => round($prediction['1'] - $homeReduction, 2),
+            'X' => round($prediction['X'] + ($homeReduction * 0.6), 2),
+            '2' => round($prediction['2'] + ($homeReduction * 0.4), 2),
+        ];
+    }
+
+    /**
+     * Ajuste les probabilités pour les matchs très serrés.
+     */
+    private function adjustForCloseMatches(array $probabilities, bool $hasHistoricalData): array
+    {
+        $values = array_values($probabilities);
+        sort($values);
+        $gap = $values[2] - $values[1]; // Écart entre le 1er et 2e
+
+        // Si l'écart est faible (< 10%), le match est serré
+        if ($gap < 10) {
+            // Augmenter la probabilité du nul
+            $drawBoost = (10 - $gap) * 0.3; // Max +3%
+
+            // Sans données historiques, on est encore plus incertain
+            if (!$hasHistoricalData) {
+                $drawBoost += 2.0;
+            }
+
+            $probabilities['X'] += $drawBoost;
+
+            // Réduire proportionnellement les autres
+            $reduction = $drawBoost / 2;
+            $probabilities['1'] -= $reduction;
+            $probabilities['2'] -= $reduction;
+
+            // Normaliser à 100%
+            $total = $probabilities['1'] + $probabilities['X'] + $probabilities['2'];
+
+            return [
+                '1' => round(($probabilities['1'] / $total) * 100, 2),
+                'X' => round(($probabilities['X'] / $total) * 100, 2),
+                '2' => round(($probabilities['2'] / $total) * 100, 2),
+            ];
+        }
+
+        return $probabilities;
+    }
+
+    /**
+     * Calcule un indicateur de qualité des données.
+     */
+    private function calculateDataQuality(bool $hasHistoricalData, int $matchesAnalyzed, bool $hasOdds): string
+    {
+        if ($hasHistoricalData && $matchesAnalyzed >= 10 && $hasOdds) {
+            return 'excellent';
+        }
+        if ($hasHistoricalData && $matchesAnalyzed >= 5) {
+            return 'good';
+        }
+        if ($hasHistoricalData || $hasOdds) {
+            return 'fair';
+        }
+
+        return 'poor';
     }
 
     /**
@@ -201,7 +340,7 @@ class ResultPredictionService
     /**
      * Agrège les prédictions de plusieurs algorithmes.
      */
-    private function aggregatePredictions(array $predictions): array
+    private function aggregatePredictions(array $predictions, bool $hasHistoricalData = true): array
     {
         // Poids par défaut sans cotes bookmaker
         $weights = [
@@ -214,13 +353,21 @@ class ResultPredictionService
         // Si on a les cotes du bookmaker, les utiliser avec un poids important
         // car elles représentent l'analyse du marché
         if (isset($predictions['bookmaker'])) {
+            // Sans données historiques, les cotes du bookmaker sont encore plus importantes
+            $bookmakerWeight = $hasHistoricalData ? 0.45 : 0.60;
+            $othersWeight = (1 - $bookmakerWeight) / 4;
+
             $weights = [
-                'poisson' => 0.15,
-                'elo' => 0.10,
-                'xg' => 0.15,
-                'monte_carlo' => 0.15,
-                'bookmaker' => 0.45, // Les cotes sont très fiables
+                'poisson' => $othersWeight,
+                'elo' => $othersWeight,
+                'xg' => $othersWeight,
+                'monte_carlo' => $othersWeight,
+                'bookmaker' => $bookmakerWeight,
             ];
+        } elseif (!$hasHistoricalData) {
+            // Sans données historiques ni cotes, on est très incertain
+            // Donner plus de poids au nul car on ne sait pas
+            // (sera ajusté dans adjustForCloseMatches)
         }
 
         $aggregated = [
@@ -245,7 +392,7 @@ class ResultPredictionService
         $total = $aggregated['1'] + $aggregated['X'] + $aggregated['2'];
 
         if (0.0 === $total) {
-            // Fallback si aucune donnée
+            // Fallback si aucune donnée: distribution plus équilibrée
             return ['1' => 33.33, 'X' => 33.34, '2' => 33.33];
         }
 

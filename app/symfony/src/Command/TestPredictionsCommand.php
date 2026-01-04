@@ -65,26 +65,30 @@ class TestPredictionsCommand extends Command
 
                 $results[] = [
                     'Match' => substr($homeTeam, 0, 20).' vs '.substr($awayTeam, 0, 20),
+                    'Pred' => $prediction['prediction'],
                     '1' => $probs['1'].'%',
                     'X' => $probs['X'].'%',
                     '2' => $probs['2'].'%',
-                    'Has Odds' => !empty($prediction['details']['bookmaker']) ? 'Yes' : 'No',
-                    'Historical' => $prediction['has_historical_data'] ? 'Yes' : 'No',
+                    'Conf' => $prediction['confidence'].'%',
+                    'Type' => $prediction['competition_type'] ?? 'league',
+                    'Data' => $prediction['data_quality'] ?? 'N/A',
                 ];
             } catch (\Exception $e) {
                 $results[] = [
                     'Match' => substr($homeTeam, 0, 20).' vs '.substr($awayTeam, 0, 20),
+                    'Pred' => 'Err',
                     '1' => 'Error',
                     'X' => 'Error',
                     '2' => 'Error',
-                    'Has Odds' => 'N/A',
-                    'Historical' => 'N/A',
+                    'Conf' => 'N/A',
+                    'Type' => 'N/A',
+                    'Data' => 'N/A',
                 ];
                 $io->warning(sprintf('Error for %s vs %s: %s', $homeTeam, $awayTeam, $e->getMessage()));
             }
         }
 
-        $io->table(['Match', '1', 'X', '2', 'Has Odds', 'Historical'], $results);
+        $io->table(['Match', 'Pred', '1', 'X', '2', 'Conf', 'Type', 'Data'], $results);
 
         // Check for duplicates
         $io->section('Duplicate analysis');

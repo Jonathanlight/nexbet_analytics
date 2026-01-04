@@ -34,9 +34,17 @@ class BasketballPredictionService
             10000
         );
 
-        $confidence = $this->confidenceCalculator->calculateOverallConfidence([
+        $algorithmScores = [
             'monte_carlo' => max($simulation['result']['home'], $simulation['result']['away']),
-        ]);
+        ];
+
+        // Le basketball a généralement plus de données et moins de nuls
+        $confidence = $this->confidenceCalculator->calculateOverallConfidence(
+            $algorithmScores,
+            true, // Assume we have data if we're predicting
+            10,   // Assume 10 matches analyzed
+            ['monte_carlo' => $simulation['result']]
+        );
 
         return [
             'probabilities' => $simulation['result'],
